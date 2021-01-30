@@ -26,7 +26,8 @@ export type Mut<E> = E & { [mutableTag]?: true };
 
 /**
  * Create an enum type by putting in all your variants in the generic `D`. The
- * data type contained in the variants cannot be `undefined`.
+ * data type contained in the variants cannot be `undefined`. The variant name
+ * cannot be `_`, as it is reserved.
  *
  * ```ts
  * type Message = Enum<{
