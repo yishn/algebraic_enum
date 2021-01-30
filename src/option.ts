@@ -6,12 +6,7 @@ type PureOption<T> = Enum<{
 }>;
 
 class OptionImpl<T> {
-  static create<T>(
-    data: Enum<{
-      None: null;
-      Some: T;
-    }>,
-  ): Option<T> {
+  static attach<T>(data: PureOption<T>): Option<T> {
     let result = new OptionImpl<T>();
     Object.assign(result, data);
     return result as Option<T>;
@@ -57,7 +52,7 @@ class OptionImpl<T> {
   xor(this: Option<T>, other: Option<T>): Option<T> {
     return Enum.match(this, {
       Some: () => other.isNone() ? this : Option.None,
-      None: () => other.isSome() ? other : Option.None,
+      None: () => other,
     });
   }
 
@@ -115,10 +110,10 @@ export type Option<T> = PureOption<T> & OptionImpl<T>;
 
 export const Option = {
   Some<T>(data: T): Option<T> {
-    return OptionImpl.create({ Some: data });
+    return OptionImpl.attach({ Some: data });
   },
 
-  None: OptionImpl.create<never>({ None: null }),
+  None: OptionImpl.attach<never>({ None: null }),
 
   from<T>(data: T | null | undefined): Option<T> {
     return data == null ? Option.None : Option.Some(data);
