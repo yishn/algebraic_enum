@@ -1,8 +1,7 @@
-declare const tag: unique symbol;
+declare const definitionTag: unique symbol;
+declare const mutableTag: unique symbol;
 
 export type NoUndefined<T> = Exclude<T, undefined>;
-
-type Tagged<T> = { [tag]?: T };
 
 type EnumDefinition = Record<string, any> & { _?: never };
 
@@ -20,8 +19,30 @@ type Matcher<D extends EnumDefinition, T> =
   | ExhaustiveMatcher<D, T>
   | PlaceholderMatcher<D, T>;
 
+/**
+ * Create an enum type by putting in all your variants in the generic `D`. The
+ * data type contained in the variants cannot be `undefined`.
+ *
+ * ```ts
+ * type Message = Enum<{
+ *   Quit: null,
+ *   Plaintext: string,
+ *   Encrypted: number[]
+ * }>;
+ *
+ * let msg: Message = { Encrypted: [4, 8, 15, 16, 23, 42] };
+ *
+ * // Or equivalently:
+ * let msg = Enum<Message>({ Encrypted: [4, 8, 15, 16, 23, 42] });
+ * ```
+ *
+ * @template D Definitions of all variants of the enum
+ */
 export type Enum<D extends EnumDefinition> = Exclude<
-  & Tagged<D>
+  & {
+    [definitionTag]?: D;
+    [mutableTag]?: unknown;
+  }
   & {
     [K in EnumKeys<D>]:
       & { readonly [L in Exclude<EnumKeys<D>, K>]?: never }
@@ -30,10 +51,83 @@ export type Enum<D extends EnumDefinition> = Exclude<
   Record<string, undefined>
 >;
 
-export function Enum<E>(e: E): E {
-  return e;
+/**
+ * Marks an enum type as mutable, so it can be mutated by
+ * `Enum.mutate`.
+ */
+export type Mut<E> = E & { [mutableTag]?: false };
+
+/**
+ * A helper function to create a variant of an enum type for better type and
+ * autocompletion support.
+ *
+ * ```ts
+ * type Message = Enum<{
+ *   Quit: null,
+ *   Plaintext: string,
+ *   Encrypted: number[]
+ * }>;
+ *
+ * let msg: Message = { Encrypted: [4, 8, 15, 16, 23, 42] };
+ *
+ * // Or equivalently:
+ * let msg = Enum<Message>({ Encrypted: [4, 8, 15, 16, 23, 42] });
+ * ```
+ *
+ * @param value
+ */
+export function Enum<E>(value: E): E {
+  return value;
 }
 
+/**
+ * Inspects the given enum `value` and executes code based on which variant
+ * matches `value`.
+ *
+ * ```ts
+ * type Message = Enum<{
+ *   Quit: null,
+ *   Plaintext: string,
+ *   Encrypted: number[]
+ * }>;
+ *
+ * let msg: Message = getMessage();
+ *
+ * let length = Enum.match(msg, {
+ *   Quit: () => -1,
+ *   Plaintext: (data) => data.length,
+ *   Encrypted: (data) => decrypt(data).length
+ * });
+ * ```
+ *
+ * Note that matches need to be exhaustive. You need to exhaust every last
+ * possibility in order for the code to be valid. The following code won't
+ * compile:
+ *
+ * ```ts
+ * Enum.match(msg, {
+ *   Quit: () => console.log("Message stream ended.")
+ * });
+ * ```
+ *
+ * In case you don't care about other variants, you can either use the special
+ * wildcard match `_` which matches all variants not specified in the matcher,
+ * or a simple `if` statement:
+ *
+ * ```ts
+ * Enum.match(msg, {
+ *   Quit: () => console.log("Message stream ended."),
+ *   _: () => console.log("Stream goes on...")
+ * });
+ *
+ * if (msg.Plaintext !== undefined) {
+ *   console.log(msg.Plaintext);
+ * }
+ * ```
+ *
+ * @param value The enum value to match against
+ * @param matcher
+ */
 Enum.match = <D extends EnumDefinition, T>(
   value: Enum<D>,
   matcher: Matcher<D, T>,
@@ -57,8 +151,31 @@ Enum.match = <D extends EnumDefinition, T>(
   );
 };
 
+/**
+ * Mutates the given `value` enum in-place to match the data in `other`.
+ * Requirement: The enum type has to be marked as mutable with `Mut`.
+ *
+ * ```ts
+ * type E = Enum<{
+ *   A: number,
+ *   B: string
+ * }>;
+ *
+ * const a: E = { A: 5 };
+ * Enum.mutate(a, { B: "Hello" }); // Compilation error
+ *
+ * const b: Mut<E> = { A: 5 };
+ * Enum.mutate(b, { B: "Hello" });
+ *
+ * console.log(b);
+ * // => { B: "Hello" }
+ * ```
+ *
+ * @param value
+ * @param other
+ */
 Enum.mutate = <D extends EnumDefinition>(
-  value: Enum<D>,
+  value: Mut<Enum<D>>,
   other: Enum<D>,
 ): void => {
   for (let key in value) {

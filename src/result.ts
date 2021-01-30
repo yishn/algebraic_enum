@@ -139,13 +139,34 @@ class ResultImpl<T, E extends Error> {
   }
 }
 
+/**
+ * The `Result` enum type represents either success (`Ok` variant) or failure
+ * (`Err` variant).
+ *
+ * ```ts
+ * let a: Result<number, Error> = Result.Ok(5);
+ * let b: Result<unknown, Error> = Result.Err(new Error("Failed!"));
+ * ```
+ *
+ * @template T Type of the data that the `Ok` variant contains
+ * @template E Type of the error that the `Err` variant contains
+ */
 export type Result<T, E extends Error> = PureResult<T, E> & ResultImpl<T, E>;
 
 export const Result = {
+  /**
+   * Creates a `Result` enum that represents success with the given data.
+   *
+   * @param data
+   */
   Ok<T, E extends Error = never>(data: NoUndefined<T>): Result<T, E> {
     return ResultImpl.attach({ Ok: data } as PureResult<T, E>);
   },
 
+  /**
+   * Creates a `Result` enum which represents failure with the given error.
+   * @param err The error value
+   */
   Err<T, E extends Error>(err: E): Result<T, E> {
     return ResultImpl.attach({ Err: err } as PureResult<T, E>);
   },

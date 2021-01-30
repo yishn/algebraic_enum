@@ -1,4 +1,4 @@
-import { Enum, NoUndefined } from "./enum.ts";
+import { Enum, Mut, NoUndefined } from "./enum.ts";
 import { Result } from "./result.ts";
 
 type PureOption<T> = Enum<{
@@ -124,7 +124,7 @@ class OptionImpl<T> {
       Some: (x) =>
         Enum.match(other, {
           None: () => Option.None(),
-          Some: (y) => Option.Some<[T, U]>([x, y]),
+          Some: (y) => Option.Some([x, y] as [T, U]),
         }),
     });
   }
@@ -138,11 +138,11 @@ class OptionImpl<T> {
     });
   }
 
-  getOrInsert(this: Option<T>, data: NoUndefined<T>): T {
+  getOrInsert(this: Mut<Option<T>>, data: NoUndefined<T>): T {
     return this.getOrInsertWith(() => data);
   }
 
-  getOrInsertWith(this: Option<T>, f: () => NoUndefined<T>): T {
+  getOrInsertWith(this: Mut<Option<T>>, f: () => NoUndefined<T>): T {
     return Enum.match(this, {
       None: () => {
         let data = f();
@@ -153,7 +153,7 @@ class OptionImpl<T> {
     });
   }
 
-  take(this: Option<T>): Option<T> {
+  take(this: Mut<Option<T>>): Option<T> {
     return Enum.match(this, {
       None: () => Option.None(),
       Some: (data) => {
@@ -163,27 +163,54 @@ class OptionImpl<T> {
     });
   }
 
-  replace(this: Option<T>, data: NoUndefined<T>): Option<T> {
+  replace(this: Mut<Option<T>>, data: NoUndefined<T>): Option<T> {
     let oldOption = this.clone();
     Enum.mutate(this, Option.Some(data));
     return oldOption;
   }
 }
 
+/**
+ * The `Option` enum type represents an optional value. It has two variants:
+ * `Some`, which contains data, and `None`, which does not.
+ *
+ * ```ts
+ * let a: Option<number> = Option.Some(5);
+ * let b: Option<never> = Option.None();
+ * let c: Option<string> = Option.from("Hello")
+ * ```
+ *
+ * @template T Type of the data that the `Option` contains
+ */
 export type Option<T> = PureOption<T> & OptionImpl<T>;
 
 export const Option = {
+  /**
+   * Creates an `Option` which contains data.
+   *
+   * @param data
+   */
   Some<T>(data: NoUndefined<T>): Option<T> {
     return OptionImpl.attach(
-      { Some: data as Exclude<T, null | undefined> } as PureOption<T>,
+      { Some: data } as PureOption<T>,
     );
   },
 
+  /**
+   * Creates an `Option` which contains no data.
+   */
   None<T = never>(): Option<T> {
     return OptionImpl.attach<T>({ None: null });
   },
 
-  from<T>(data: T | null | undefined): Option<T> {
-    return data == null ? Option.None() : Option.Some(data as NoUndefined<T>);
+  /**
+   * Creates an `Option` based on `value`. If `value` is `null` or `undefined`,
+   * this will return a `None` variant, otherwise the given `value` is attached
+   * to a `Some` variant.
+   *
+   * @param value
+   */
+  from<T>(value: T | null | undefined): Option<T> {
+    return value == null ? Option.None() : Option.Some(value as NoUndefined<T>);
   },
 };
