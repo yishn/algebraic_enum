@@ -1,18 +1,7 @@
 import { Enum, Mut, NoUndefined } from "./enum.ts";
 import { Result } from "./result.ts";
 
-type PureOption<T> = Enum<{
-  None: null;
-  Some: T;
-}>;
-
 class OptionImpl<T> {
-  static attach<T>(data: PureOption<T>): Option<T> {
-    let result = new OptionImpl<T>();
-    Object.assign(result, data);
-    return result as Option<T>;
-  }
-
   *[Symbol.iterator](this: Option<T>): Iterator<T> {
     if (this.isSome()) yield this.unwrap();
   }
@@ -182,7 +171,12 @@ class OptionImpl<T> {
  *
  * @template T Type of the data that the `Option` contains
  */
-export type Option<T> = PureOption<T> & OptionImpl<T>;
+export type Option<T> =
+  & Enum<{
+    None: null;
+    Some: T;
+  }>
+  & OptionImpl<T>;
 
 export const Option = {
   /**
@@ -191,16 +185,14 @@ export const Option = {
    * @param data
    */
   Some<T>(data: NoUndefined<T>): Option<T> {
-    return OptionImpl.attach(
-      { Some: data } as PureOption<T>,
-    );
+    return Enum.attach({ Some: data }, new OptionImpl());
   },
 
   /**
    * Creates an `Option` which contains no data.
    */
   None<T = never>(): Option<T> {
-    return OptionImpl.attach<T>({ None: null });
+    return Enum.attach({ None: null }, new OptionImpl());
   },
 
   /**

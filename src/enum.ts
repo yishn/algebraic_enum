@@ -38,18 +38,16 @@ type Matcher<D extends EnumDefinition, T> =
  *
  * @template D Definitions of all variants of the enum
  */
-export type Enum<D extends EnumDefinition> = Exclude<
-  & {
-    [definitionTag]?: D;
-    [mutableTag]?: unknown;
-  }
+export type Enum<D extends EnumDefinition> =
   & {
     [K in EnumKeys<D>]:
       & { readonly [L in Exclude<EnumKeys<D>, K>]?: never }
       & { readonly [L in K]-?: NoUndefined<D[K]> };
-  }[EnumKeys<D>],
-  Record<string, undefined>
->;
+  }[EnumKeys<D>]
+  & {
+    [definitionTag]?: D;
+    [mutableTag]?: unknown;
+  };
 
 /**
  * Marks an enum type as mutable, so it can be mutated by
@@ -136,7 +134,7 @@ Enum.match = <D extends EnumDefinition, T>(
     .find((key) => value[key] !== undefined);
 
   if (key === undefined) {
-    throw new Error("No available variant found on `Enum`.");
+    throw new Error("No variants found on `value`.");
   }
 
   if (matcher[key] !== undefined) {
@@ -179,8 +177,47 @@ Enum.mutate = <D extends EnumDefinition>(
   other: Enum<D>,
 ): void => {
   for (let key in value) {
-    delete value[key];
+    delete (value as any)[key];
   }
 
   Object.assign(value, other);
+};
+
+/**
+ * Attaches methods to a given enum `value`. You have to ensure that the methods
+ * on `impl` are not enumerable keys. This is always the case with a class
+ * instance where all methods are in its `prototype`. Furthermore, method names
+ * cannot coincide with variant names.
+ *
+ * ```ts
+ * type Message = Enum<{
+ *   Quit: null,
+ *   Plaintext: string,
+ *   Encrypted: number[]
+ * }> & MessageImpl;
+ *
+ * const Message = {
+ *   Plaintext(text: string): Message {
+ *     return Enum.attach({ Plaintext: text }, new MessageImpl());
+ *   }
+ * };
+ *
+ * class MessageImpl {
+ *   async send(this: Message): Promise<void> {
+ *     // ...
+ *   }
+ * }
+ *
+ * let msg = Message.Plaintext("Hello World!");
+ * await msg.send();
+ * ```
+ *
+ * @param value The enum value
+ * @param impl A class instance of methods to be attached to `value`
+ */
+Enum.attach = <D extends EnumDefinition, T>(
+  value: Enum<D>,
+  impl: T,
+): Enum<D> & T => {
+  return Object.assign(impl, value);
 };

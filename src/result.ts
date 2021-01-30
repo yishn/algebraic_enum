@@ -1,18 +1,7 @@
 import { Enum, NoUndefined } from "./enum.ts";
 import { Option } from "./option.ts";
 
-type PureResult<T, E extends Error> = Enum<{
-  Ok: T;
-  Err: E;
-}>;
-
 class ResultImpl<T, E extends Error> {
-  static attach<T, E extends Error>(data: PureResult<T, E>): Result<T, E> {
-    let result = new ResultImpl<T, E>();
-    Object.assign(result, data);
-    return result as Result<T, E>;
-  }
-
   *[Symbol.iterator](this: Result<T, E>): Iterator<T> {
     if (this.isOk()) yield this.unwrap();
   }
@@ -151,7 +140,12 @@ class ResultImpl<T, E extends Error> {
  * @template T Type of the data that the `Ok` variant contains
  * @template E Type of the error that the `Err` variant contains
  */
-export type Result<T, E extends Error> = PureResult<T, E> & ResultImpl<T, E>;
+export type Result<T, E extends Error> =
+  & Enum<{
+    Ok: T;
+    Err: E;
+  }>
+  & ResultImpl<T, E>;
 
 export const Result = {
   /**
@@ -160,7 +154,7 @@ export const Result = {
    * @param data
    */
   Ok<T, E extends Error = never>(data: NoUndefined<T>): Result<T, E> {
-    return ResultImpl.attach({ Ok: data } as PureResult<T, E>);
+    return Enum.attach({ Ok: data }, new ResultImpl());
   },
 
   /**
@@ -168,6 +162,6 @@ export const Result = {
    * @param err The error value
    */
   Err<T, E extends Error>(err: E): Result<T, E> {
-    return ResultImpl.attach({ Err: err } as PureResult<T, E>);
+    return Enum.attach({ Err: err as NoUndefined<E> }, new ResultImpl());
   },
 };
