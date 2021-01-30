@@ -1,11 +1,9 @@
-import { Enum } from "./mod.ts";
+import { Enum } from "./enum.ts";
 
 type PureOption<T> = Enum<{
   None: null;
   Some: T;
 }>;
-
-export type Option<T> = PureOption<T> & OptionImpl<T>;
 
 class OptionImpl<T> {
   static create<T>(
@@ -113,10 +111,16 @@ class OptionImpl<T> {
   }
 }
 
-export const Option = {
-  Some: <T>(data: T) => OptionImpl.create({ Some: data }),
-  None: OptionImpl.create<never>({ None: null }),
+export type Option<T> = PureOption<T> & OptionImpl<T>;
 
-  from: <T>(data: T | null | undefined) =>
-    data == null ? Option.None : Option.Some(data),
-};
+export namespace Option {
+  export function Some<T>(data: T): Option<T> {
+    return OptionImpl.create({ Some: data });
+  }
+
+  export const None = OptionImpl.create<never>({ None: null });
+
+  export function from<T>(data: T | null | undefined) {
+    return data == null ? Option.None : Option.Some(data);
+  }
+}
