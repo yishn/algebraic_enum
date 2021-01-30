@@ -11,13 +11,13 @@ type ExhaustiveMatcher<D extends EnumDefinition, T> = {
   [K in EnumKeys<D>]: (data: NoUndefined<D[K]>) => T;
 };
 
-type PlaceholderMatcher<D extends EnumDefinition, T> =
+type WildcardMatcher<D extends EnumDefinition, T> =
   & Partial<ExhaustiveMatcher<D, T>>
   & { _: () => T };
 
-type Matcher<D extends EnumDefinition, T> =
+export type Matcher<D extends EnumDefinition, T> =
   | ExhaustiveMatcher<D, T>
-  | PlaceholderMatcher<D, T>;
+  | WildcardMatcher<D, T>;
 
 /**
  * Marks an enum type as mutable, so it can be mutated by `Enum.mutate`.
@@ -55,7 +55,7 @@ export type Enum<D extends EnumDefinition> =
     [mutableTag]?: unknown;
   }>;
 
-export function Enum<E>(value: E): E {
+export function Enum<E extends Enum<EnumDefinition>>(value: E): E {
   return value;
 }
 
@@ -121,7 +121,7 @@ Enum.match = <D extends EnumDefinition, T>(
   if (matcher[key] !== undefined) {
     return matcher[key]!(value[key]!);
   } else if ("_" in matcher && matcher._ !== undefined) {
-    return (matcher as PlaceholderMatcher<D, T>)._();
+    return (matcher as WildcardMatcher<D, T>)._();
   }
 
   throw new Error(
