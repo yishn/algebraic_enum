@@ -10,6 +10,9 @@ class OptionImpl<T> extends EnumImpl<{
     if (this.isSome()) yield this.unwrap();
   }
 
+  /**
+   * Makes a shallow copy of the option.
+   */
   clone(this: Option<T>): Option<T> {
     return Enum.match(this, {
       Some: (data) => Option.Some(data),
@@ -17,6 +20,9 @@ class OptionImpl<T> extends EnumImpl<{
     });
   }
 
+  /**
+   * Returns `true` if the option is a `Some` variant.
+   */
   isSome(this: Option<T>): boolean {
     return Enum.match(this, {
       Some: () => true,
@@ -24,14 +30,28 @@ class OptionImpl<T> extends EnumImpl<{
     });
   }
 
+  /**
+   * Returns `true` if the option is a `None` variant.
+   */
   isNone(this: Option<T>): boolean {
     return !this.isSome();
   }
 
+  /**
+   * Returns `None` if the option is `None`, otherwise returns `other`.
+   *
+   * @param other
+   */
   and<U>(this: Option<T>, other: Option<U>): Option<U> {
     return this.andThen(() => other);
   }
 
+  /**
+   * Returns `None` if the option is `None`, otherwise calls `f` with the
+   * wrapped value and returns the result as option.
+   *
+   * @param f
+   */
   andThen<U>(this: Option<T>, f: (data: T) => Option<U>): Option<U> {
     return Enum.match(this, {
       None: () => Option.None(),
@@ -39,10 +59,21 @@ class OptionImpl<T> extends EnumImpl<{
     });
   }
 
+  /**
+   * Returns the option if it contains a value, otherwise returns `other`.
+   *
+   * @param other
+   */
   or(this: Option<T>, other: Option<T>): Option<T> {
     return this.orElse(() => other);
   }
 
+  /**
+   * Returns the option if it contains a value, otherwise calls `f` and returns
+   * the result as option.
+   *
+   * @param f
+   */
   orElse(this: Option<T>, f: () => Option<T>): Option<T> {
     return Enum.match(this, {
       Some: () => this,
@@ -50,6 +81,12 @@ class OptionImpl<T> extends EnumImpl<{
     });
   }
 
+  /**
+   * Returns `Some` if exactly one of `this`, `other` is `Some`, otherwise
+   * returns `None`.
+   *
+   * @param other
+   */
   xor(this: Option<T>, other: Option<T>): Option<T> {
     return Enum.match(this, {
       Some: () => other.isNone() ? this : Option.None(),
@@ -57,36 +94,69 @@ class OptionImpl<T> extends EnumImpl<{
     });
   }
 
-  expect(this: Option<T>, msg: string): T {
+  /**
+   * Returns the contained `Some` value. Throws if option is `None`.
+   */
+  unwrap(this: Option<T>): T {
     return Enum.match(this, {
       Some: (data) => data,
       None: () => {
-        throw new Error(msg);
+        throw new Error("Called `Option.unwrap()` on a `None` value");
       },
     });
   }
 
-  expectNone(this: Option<T>, msg: string): void {
-    if (this.isSome()) {
-      throw new Error(msg);
-    }
-  }
-
-  unwrap(this: Option<T>): T {
-    return this.expect("Called `Option.unwrap()` on a `None` value");
-  }
-
+  /**
+   * Returns the contained `Some` value or a provided fallback.
+   *
+   * @param fallback
+   */
   unwrapOr(this: Option<T>, fallback: T): T {
     return this.unwrapOrElse(() => fallback);
   }
 
-  unwrapOrElse(this: Option<T>, f: () => T): T {
+  /**
+   * Returns the contained `Some` value or computes it from `fallback`.
+   *
+   * @param fallback
+   */
+  unwrapOrElse(this: Option<T>, fallback: () => T): T {
     return Enum.match(this, {
       Some: (data) => data,
-      None: f,
+      None: fallback,
     });
   }
 
+  /**
+   * Transforms the `Option<T>` into a `Result<T, E>`.
+   *
+   * @param err
+   */
+  okOr<E extends Error>(this: Option<T>, err: E): Result<T, E> {
+    return this.okOrElse(() => err);
+  }
+
+  /**
+   * Transforms the `Option<T>` into a `Result<T, E>`.
+   *
+   * @param err
+   */
+  okOrElse<E extends Error>(this: Option<T>, err: () => E): Result<T, E> {
+    return Enum.match(this, {
+      Some: (data) => Result.Ok(data),
+      None: () => Result.Err(err()),
+    });
+  }
+
+  /**
+   * Returns `None` if the option is `None`, otherwise calls `predicate` with
+   * the wrapped value and returns:
+   *
+   * - `Some` if `predicate` returns `true`
+   * - `None` if `predicate` returns `false`
+   *
+   * @param predicate
+   */
   filter(this: Option<T>, predicate: (data: T) => boolean): Option<T> {
     return Enum.match(this, {
       None: () => this,
@@ -94,6 +164,12 @@ class OptionImpl<T> extends EnumImpl<{
     });
   }
 
+  /**
+   * Maps an `Option<T>` to `Option<U>` by applying a function to a contained
+   * value.
+   *
+   * @param f
+   */
   map<U>(
     this: Option<T>,
     f: (data: NoUndefined<T>) => NoUndefined<U>,
@@ -104,13 +180,54 @@ class OptionImpl<T> extends EnumImpl<{
     });
   }
 
-  flatten(this: Option<Option<T>>): Option<T> {
+  /**
+   * Applies a function to the contained value (if any), or returns the provided
+   * fallback (if not).
+   *
+   * @param fallback
+   * @param f
+   */
+  mapOr<U>(
+    this: Option<T>,
+    fallback: U,
+    f: (data: NoUndefined<T>) => NoUndefined<U>,
+  ): U {
+    return this.map(f).unwrapOr(fallback);
+  }
+
+  /**
+   * Applies a function to the contained value (if any), or computes a default
+   * (if not).
+   *
+   * @param fallback
+   * @param f
+   */
+  mapOrElse<U>(
+    this: Option<T>,
+    fallback: () => U,
+    f: (data: NoUndefined<T>) => NoUndefined<U>,
+  ): U {
+    return this.map(f).unwrapOrElse(fallback);
+  }
+
+  /**
+   * Converts from `Option<Option<T>>` to `Option<T>`.
+   */
+  flatten<U>(this: Option<Option<U>>): Option<U> {
     return Enum.match(this, {
       None: () => Option.None(),
       Some: (option) => option,
     });
   }
 
+  /**
+   * Zips `this` with another `Option`.
+   *
+   * If both options is `Some` with corresponding values `x` and `y`, this
+   * method returns `Some` with value `[x, y]`. Otherwise, `None` is returned.
+   *
+   * @param other
+   */
   zip<U>(this: Option<T>, other: Option<U>): Option<[T, U]> {
     return Enum.match(this, {
       None: () => Option.None(),
@@ -122,19 +239,34 @@ class OptionImpl<T> extends EnumImpl<{
     });
   }
 
-  transpose<E extends Error>(
-    this: Option<Result<T, E>>,
-  ): Result<Option<T>, E> {
+  /**
+   * Transposes an `Option` of a `Result` into a `Result` of an `Option`.
+   */
+  transpose<U, E extends Error>(
+    this: Option<Result<U, E>>,
+  ): Result<Option<U>, E> {
     return Enum.match(this, {
       None: () => Result.Ok(Option.None()),
       Some: (result) => result.map((data) => Option.Some(data)),
     });
   }
 
+  /**
+   * Inserts `data` into the option if it is `None`, then returns the contained
+   * value.
+   *
+   * @param data
+   */
   getOrInsert(this: Mut<Option<T>>, data: NoUndefined<T>): T {
     return this.getOrInsertWith(() => data);
   }
 
+  /**
+   * Inserts a value computed from `f` into the option if it is `None`, then
+   * returns the contained value.
+   *
+   * @param f
+   */
   getOrInsertWith(this: Mut<Option<T>>, f: () => NoUndefined<T>): T {
     return Enum.match(this, {
       None: () => {
@@ -146,6 +278,9 @@ class OptionImpl<T> extends EnumImpl<{
     });
   }
 
+  /**
+   * Takes the value out of the option, leaving a `None` in its place.
+   */
   take(this: Mut<Option<T>>): Option<T> {
     return Enum.match(this, {
       None: () => Option.None(),
@@ -156,6 +291,12 @@ class OptionImpl<T> extends EnumImpl<{
     });
   }
 
+  /**
+   * Replaces the actual value in the option by the value given by `data`,
+   * returning the old value if present, leaving a `Some` in its place.
+   *
+   * @param data
+   */
   replace(this: Mut<Option<T>>, data: NoUndefined<T>): Option<T> {
     let oldOption = this.clone();
     Enum.mutate(this, Option.Some(data));
