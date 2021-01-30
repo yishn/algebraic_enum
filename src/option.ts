@@ -19,7 +19,7 @@ class OptionImpl<T> {
 
   clone(this: Option<T>): Option<T> {
     return Enum.match(this, {
-      Some: (data) => Option.Some(data as NoUndefined<T>),
+      Some: (data) => Option.Some(data),
       None: () => Option.None(),
     });
   }
@@ -103,7 +103,7 @@ class OptionImpl<T> {
 
   map<U>(
     this: Option<T>,
-    f: (data: T) => NoUndefined<U>,
+    f: (data: NoUndefined<T>) => NoUndefined<U>,
   ): Option<U> {
     return Enum.match(this, {
       None: () => Option.None(),
@@ -134,8 +134,7 @@ class OptionImpl<T> {
   ): Result<Option<T>, E> {
     return Enum.match(this, {
       None: () => Result.Ok(Option.None()),
-      Some: (result) =>
-        result.map((data) => Option.Some(data as NoUndefined<T>)),
+      Some: (result) => result.map((data) => Option.Some(data)),
     });
   }
 
@@ -159,7 +158,7 @@ class OptionImpl<T> {
       None: () => Option.None(),
       Some: (data) => {
         Enum.mutate(this, Option.None());
-        return Option.Some(data as NoUndefined<T>);
+        return Option.Some(data);
       },
     });
   }

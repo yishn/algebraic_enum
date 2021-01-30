@@ -9,7 +9,7 @@ type EnumDefinition = Record<string, any> & { _?: never };
 type EnumKeys<D extends EnumDefinition> = Exclude<keyof D, "_">;
 
 type ExhaustiveMatcher<D extends EnumDefinition, T> = {
-  [K in EnumKeys<D>]: (data: D[K]) => T;
+  [K in EnumKeys<D>]: (data: NoUndefined<D[K]>) => T;
 };
 
 type PlaceholderMatcher<D extends EnumDefinition, T> =

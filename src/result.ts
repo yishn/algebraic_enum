@@ -108,7 +108,7 @@ class ResultImpl<T, E extends Error> {
   ): Result<T, F> {
     return Enum.match(this, {
       Err: f,
-      Ok: (data) => Result.Ok(data as NoUndefined<T>),
+      Ok: (data) => Result.Ok(data),
     });
   }
 
@@ -117,13 +117,13 @@ class ResultImpl<T, E extends Error> {
   ): Option<Result<T, E>> {
     return Enum.match(this, {
       Err: (err) => Option.Some(Result.Err(err)),
-      Ok: (option) => option.map((data) => Result.Ok(data as NoUndefined<T>)),
+      Ok: (option) => option.map((data) => Result.Ok(data)),
     });
   }
 
   map<U>(
     this: Result<T, E>,
-    f: (data: T) => NoUndefined<U>,
+    f: (data: NoUndefined<T>) => NoUndefined<U>,
   ): Result<U, E> {
     return Enum.match(this, {
       Ok: (data) => Result.Ok(f(data)),
@@ -133,7 +133,7 @@ class ResultImpl<T, E extends Error> {
 
   mapErr<F extends Error>(this: Result<T, E>, f: (err: E) => F): Result<T, F> {
     return Enum.match(this, {
-      Ok: (data) => Result.Ok(data as NoUndefined<T>),
+      Ok: (data) => Result.Ok(data),
       Err: (err) => Result.Err(f(err)),
     });
   }
