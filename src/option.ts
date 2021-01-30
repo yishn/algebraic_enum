@@ -33,7 +33,7 @@ class OptionImpl<T> {
 
   andThen<U>(this: Option<T>, f: (data: T) => Option<U>): Option<U> {
     return Enum.match(this, {
-      None: () => Option.None,
+      None: () => Option.None(),
       Some: f,
     });
   }
@@ -51,7 +51,7 @@ class OptionImpl<T> {
 
   xor(this: Option<T>, other: Option<T>): Option<T> {
     return Enum.match(this, {
-      Some: () => other.isNone() ? this : Option.None,
+      Some: () => other.isNone() ? this : Option.None(),
       None: () => other,
     });
   }
@@ -83,24 +83,27 @@ class OptionImpl<T> {
   filter(this: Option<T>, predicate: (data: T) => boolean): Option<T> {
     return Enum.match(this, {
       None: () => this,
-      Some: (data) => predicate(data) ? this : Option.None,
+      Some: (data) => predicate(data) ? this : Option.None(),
     });
   }
 
-  map<U>(this: Option<T>, f: (data: T) => U): Option<U> {
+  map<U>(
+    this: Option<T>,
+    f: (data: T) => NonNullable<U>,
+  ): Option<U> {
     return Enum.match(this, {
-      None: () => Option.None,
+      None: () => Option.None(),
       Some: (data) => Option.Some(f(data)),
     });
   }
 
   zip<U>(this: Option<T>, other: Option<U>): Option<[T, U]> {
     return Enum.match(this, {
-      None: () => Option.None,
+      None: () => Option.None(),
       Some: (x) =>
         Enum.match(other, {
-          None: () => Option.None,
-          Some: (y) => Option.Some([x, y]),
+          None: () => Option.None(),
+          Some: (y) => Option.Some<[T, U]>([x, y]),
         }),
     });
   }
@@ -109,13 +112,17 @@ class OptionImpl<T> {
 export type Option<T> = PureOption<T> & OptionImpl<T>;
 
 export const Option = {
-  Some<T>(data: T): Option<T> {
-    return OptionImpl.attach({ Some: data });
+  Some<T>(data: NonNullable<T>): Option<T> {
+    return OptionImpl.attach(
+      { Some: data as Exclude<T, null | undefined> } as PureOption<T>,
+    );
   },
 
-  None: OptionImpl.attach<never>({ None: null }),
+  None(): Option<never> {
+    return OptionImpl.attach<never>({ None: null });
+  },
 
-  from<T>(data: T | null | undefined): Option<T> {
-    return data == null ? Option.None : Option.Some(data);
+  from<T>(data: NonNullable<T> | null | undefined): Option<T> {
+    return data == null ? Option.None() : Option.Some(data);
   },
 };

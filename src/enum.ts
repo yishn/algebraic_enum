@@ -18,15 +18,17 @@ type Matcher<D extends EnumDefinition, T> =
   | ExhaustiveMatcher<D, T>
   | PlaceholderMatcher<D, T>;
 
-export type Enum<D extends EnumDefinition> =
+export type Enum<D extends EnumDefinition> = Exclude<
   & Tagged<D>
   & {
     [K in EnumKeys<D>]:
       & { readonly [L in Exclude<EnumKeys<D>, K>]?: never }
-      & { readonly [L in K]: D[K] };
-  }[EnumKeys<D>];
+      & { readonly [L in K]-?: Exclude<D[K], undefined> };
+  }[EnumKeys<D>],
+  Record<string, undefined>
+>;
 
-export function Enum<E extends Enum<EnumDefinition>>(e: E): E {
+export function Enum<E>(e: E): E {
   return e;
 }
 
@@ -51,4 +53,15 @@ Enum.match = <D extends EnumDefinition, T>(
     "Non-exhaustive matcher. To ensure all possible cases are covered, you " +
       "can add a wildcard `_` match arm.",
   );
+};
+
+Enum.mutate = <D extends EnumDefinition>(
+  e: Enum<D>,
+  d: Enum<D>,
+): void => {
+  for (let key in e) {
+    delete e[key];
+  }
+
+  Object.assign(e, d);
 };
