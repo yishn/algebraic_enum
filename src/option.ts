@@ -1,4 +1,5 @@
-import { Enum } from "./enum.ts";
+import { Enum, NoUndefined } from "./enum.ts";
+import { Result } from "./result.ts";
 
 type PureOption<T> = Enum<{
   None: null;
@@ -12,8 +13,15 @@ class OptionImpl<T> {
     return result as Option<T>;
   }
 
-  *[Symbol.iterator](this: Option<T>) {
+  *[Symbol.iterator](this: Option<T>): Iterator<T> {
     if (this.isSome()) yield this.unwrap();
+  }
+
+  clone(this: Option<T>): Option<T> {
+    return Enum.match(this, {
+      Some: (data) => Option.Some(data as NoUndefined<T>),
+      None: () => Option.None(),
+    });
   }
 
   isSome(this: Option<T>): boolean {
@@ -56,17 +64,23 @@ class OptionImpl<T> {
     });
   }
 
-  expect(this: Option<T>, err: any): T {
+  expect(this: Option<T>, msg: string): T {
     return Enum.match(this, {
       Some: (data) => data,
       None: () => {
-        throw err;
+        throw new Error(msg);
       },
     });
   }
 
+  expectNone(this: Option<T>, msg: string): void {
+    if (this.isSome()) {
+      throw new Error(msg);
+    }
+  }
+
   unwrap(this: Option<T>): T {
-    return this.expect(new Error("Called `Option.unwrap()` on a `None` value"));
+    return this.expect("Called `Option.unwrap()` on a `None` value");
   }
 
   unwrapOr(this: Option<T>, fallback: T): T {
@@ -89,11 +103,18 @@ class OptionImpl<T> {
 
   map<U>(
     this: Option<T>,
-    f: (data: T) => NonNullable<U>,
+    f: (data: T) => NoUndefined<U>,
   ): Option<U> {
     return Enum.match(this, {
       None: () => Option.None(),
       Some: (data) => Option.Some(f(data)),
+    });
+  }
+
+  flatten(this: Option<Option<T>>): Option<T> {
+    return Enum.match(this, {
+      None: () => Option.None(),
+      Some: (option) => option,
     });
   }
 
@@ -107,22 +128,63 @@ class OptionImpl<T> {
         }),
     });
   }
+
+  transpose<E extends Error>(
+    this: Option<Result<T, E>>,
+  ): Result<Option<T>, E> {
+    return Enum.match(this, {
+      None: () => Result.Ok(Option.None()),
+      Some: (result) =>
+        result.map((data) => Option.Some(data as NoUndefined<T>)),
+    });
+  }
+
+  getOrInsert(this: Option<T>, data: NoUndefined<T>): T {
+    return this.getOrInsertWith(() => data);
+  }
+
+  getOrInsertWith(this: Option<T>, f: () => NoUndefined<T>): T {
+    return Enum.match(this, {
+      None: () => {
+        let data = f();
+        Enum.mutate(this, Option.Some(data));
+        return data;
+      },
+      Some: (data) => data,
+    });
+  }
+
+  take(this: Option<T>): Option<T> {
+    return Enum.match(this, {
+      None: () => Option.None(),
+      Some: (data) => {
+        Enum.mutate(this, Option.None());
+        return Option.Some(data as NoUndefined<T>);
+      },
+    });
+  }
+
+  replace(this: Option<T>, data: NoUndefined<T>): Option<T> {
+    let oldOption = this.clone();
+    Enum.mutate(this, Option.Some(data));
+    return oldOption;
+  }
 }
 
 export type Option<T> = PureOption<T> & OptionImpl<T>;
 
 export const Option = {
-  Some<T>(data: NonNullable<T>): Option<T> {
+  Some<T>(data: NoUndefined<T>): Option<T> {
     return OptionImpl.attach(
       { Some: data as Exclude<T, null | undefined> } as PureOption<T>,
     );
   },
 
-  None(): Option<never> {
-    return OptionImpl.attach<never>({ None: null });
+  None<T = never>(): Option<T> {
+    return OptionImpl.attach<T>({ None: null });
   },
 
-  from<T>(data: NonNullable<T> | null | undefined): Option<T> {
-    return data == null ? Option.None() : Option.Some(data);
+  from<T>(data: T | null | undefined): Option<T> {
+    return data == null ? Option.None() : Option.Some(data as NoUndefined<T>);
   },
 };

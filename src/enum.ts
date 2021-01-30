@@ -1,5 +1,7 @@
 declare const tag: unique symbol;
 
+export type NoUndefined<T> = Exclude<T, undefined>;
+
 type Tagged<T> = { [tag]?: T };
 
 type EnumDefinition = Record<string, any> & { _?: never };
@@ -23,7 +25,7 @@ export type Enum<D extends EnumDefinition> = Exclude<
   & {
     [K in EnumKeys<D>]:
       & { readonly [L in Exclude<EnumKeys<D>, K>]?: never }
-      & { readonly [L in K]-?: Exclude<D[K], undefined> };
+      & { readonly [L in K]-?: NoUndefined<D[K]> };
   }[EnumKeys<D>],
   Record<string, undefined>
 >;
@@ -33,18 +35,18 @@ export function Enum<E>(e: E): E {
 }
 
 Enum.match = <D extends EnumDefinition, T>(
-  e: Enum<D>,
+  value: Enum<D>,
   matcher: Matcher<D, T>,
 ): T => {
-  let key = (Object.keys(e) as EnumKeys<D>[])
-    .find((key) => e[key] !== undefined);
+  let key = (Object.keys(value) as EnumKeys<D>[])
+    .find((key) => value[key] !== undefined);
 
   if (key === undefined) {
     throw new Error("No available variant found on `Enum`.");
   }
 
   if (matcher[key] !== undefined) {
-    return matcher[key]!(e[key]!);
+    return matcher[key]!(value[key]!);
   } else if ("_" in matcher && matcher._ !== undefined) {
     return (matcher as PlaceholderMatcher<D, T>)._();
   }
@@ -56,12 +58,12 @@ Enum.match = <D extends EnumDefinition, T>(
 };
 
 Enum.mutate = <D extends EnumDefinition>(
-  e: Enum<D>,
-  d: Enum<D>,
+  value: Enum<D>,
+  other: Enum<D>,
 ): void => {
-  for (let key in e) {
-    delete e[key];
+  for (let key in value) {
+    delete value[key];
   }
 
-  Object.assign(e, d);
+  Object.assign(value, other);
 };
