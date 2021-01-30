@@ -113,14 +113,14 @@ class OptionImpl<T> {
 
 export type Option<T> = PureOption<T> & OptionImpl<T>;
 
-export namespace Option {
-  export function Some<T>(data: T): Option<T> {
+export const Option = {
+  Some<T>(data: T): Option<T> {
     return OptionImpl.create({ Some: data });
-  }
+  },
 
-  export const None = OptionImpl.create<never>({ None: null });
+  None: OptionImpl.create<never>({ None: null }),
 
-  export function from<T>(data: T | null | undefined) {
+  from<T>(data: T | null | undefined): Option<T> {
     return data == null ? Option.None : Option.Some(data);
-  }
-}
+  },
+};
