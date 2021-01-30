@@ -3,7 +3,7 @@ declare const mutableTag: unique symbol;
 
 export type NoUndefined<T> = Exclude<T, undefined>;
 
-type EnumDefinition = Record<string, any> & { _?: never };
+export type EnumDefinition = Record<string, any> & { _?: never };
 
 type EnumKeys<D extends EnumDefinition> = Exclude<keyof D, "_">;
 
@@ -18,6 +18,11 @@ type PlaceholderMatcher<D extends EnumDefinition, T> =
 type Matcher<D extends EnumDefinition, T> =
   | ExhaustiveMatcher<D, T>
   | PlaceholderMatcher<D, T>;
+
+/**
+ * Marks an enum type as mutable, so it can be mutated by `Enum.mutate`.
+ */
+export type Mut<E> = E & { [mutableTag]?: true };
 
 /**
  * Create an enum type by putting in all your variants in the generic `D`. The
@@ -44,36 +49,11 @@ export type Enum<D extends EnumDefinition> =
       & { readonly [L in Exclude<EnumKeys<D>, K>]?: never }
       & { readonly [L in K]-?: NoUndefined<D[K]> };
   }[EnumKeys<D>]
-  & {
+  & Readonly<{
     [definitionTag]?: D;
     [mutableTag]?: unknown;
-  };
+  }>;
 
-/**
- * Marks an enum type as mutable, so it can be mutated by
- * `Enum.mutate`.
- */
-export type Mut<E> = E & { [mutableTag]?: false };
-
-/**
- * A helper function to create a variant of an enum type for better type and
- * autocompletion support.
- *
- * ```ts
- * type Message = Enum<{
- *   Quit: null,
- *   Plaintext: string,
- *   Encrypted: number[]
- * }>;
- *
- * let msg: Message = { Encrypted: [4, 8, 15, 16, 23, 42] };
- *
- * // Or equivalently:
- * let msg = Enum<Message>({ Encrypted: [4, 8, 15, 16, 23, 42] });
- * ```
- *
- * @param value
- */
 export function Enum<E>(value: E): E {
   return value;
 }
@@ -181,43 +161,4 @@ Enum.mutate = <D extends EnumDefinition>(
   }
 
   Object.assign(value, other);
-};
-
-/**
- * Attaches methods to a given enum `value`. You have to ensure that the methods
- * on `impl` are not enumerable keys. This is always the case with a class
- * instance where all methods are in its `prototype`. Furthermore, method names
- * cannot coincide with variant names.
- *
- * ```ts
- * type Message = Enum<{
- *   Quit: null,
- *   Plaintext: string,
- *   Encrypted: number[]
- * }> & MessageImpl;
- *
- * const Message = {
- *   Plaintext(text: string): Message {
- *     return Enum.attach({ Plaintext: text }, new MessageImpl());
- *   }
- * };
- *
- * class MessageImpl {
- *   async send(this: Message): Promise<void> {
- *     // ...
- *   }
- * }
- *
- * let msg = Message.Plaintext("Hello World!");
- * await msg.send();
- * ```
- *
- * @param value The enum value
- * @param impl A class instance of methods to be attached to `value`
- */
-Enum.attach = <D extends EnumDefinition, T>(
-  value: Enum<D>,
-  impl: T,
-): Enum<D> & T => {
-  return Object.assign(impl, value);
 };

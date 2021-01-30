@@ -1,7 +1,11 @@
 import { Enum, Mut, NoUndefined } from "./enum.ts";
+import { EnumImpl, EnumWithImpl } from "./enum_impl.ts";
 import { Result } from "./result.ts";
 
-class OptionImpl<T> {
+class OptionImpl<T> extends EnumImpl<{
+  None: null;
+  Some: T;
+}> {
   *[Symbol.iterator](this: Option<T>): Iterator<T> {
     if (this.isSome()) yield this.unwrap();
   }
@@ -171,12 +175,7 @@ class OptionImpl<T> {
  *
  * @template T Type of the data that the `Option` contains
  */
-export type Option<T> =
-  & Enum<{
-    None: null;
-    Some: T;
-  }>
-  & OptionImpl<T>;
+export type Option<T> = EnumWithImpl<OptionImpl<T>>;
 
 export const Option = {
   /**
@@ -185,14 +184,14 @@ export const Option = {
    * @param data
    */
   Some<T>(data: NoUndefined<T>): Option<T> {
-    return Enum.attach({ Some: data }, new OptionImpl());
+    return new OptionImpl({ Some: data }) as Option<T>;
   },
 
   /**
    * Creates an `Option` which contains no data.
    */
   None<T = never>(): Option<T> {
-    return Enum.attach({ None: null }, new OptionImpl());
+    return new OptionImpl({ None: null }) as Option<T>;
   },
 
   /**

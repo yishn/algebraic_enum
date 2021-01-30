@@ -1,9 +1,20 @@
 import { Enum, NoUndefined } from "./enum.ts";
+import { EnumImpl, EnumWithImpl } from "./enum_impl.ts";
 import { Option } from "./option.ts";
 
-class ResultImpl<T, E extends Error> {
+class ResultImpl<T, E extends Error> extends EnumImpl<{
+  Ok: T;
+  Err: E;
+}> {
   *[Symbol.iterator](this: Result<T, E>): Iterator<T> {
     if (this.isOk()) yield this.unwrap();
+  }
+
+  clone(this: Result<T, E>): Result<T, E> {
+    return Enum.match(this, {
+      Ok: (data) => Result.Ok(data),
+      Err: (err) => Result.Err(err),
+    });
   }
 
   isOk(this: Result<T, E>): boolean {
@@ -140,12 +151,7 @@ class ResultImpl<T, E extends Error> {
  * @template T Type of the data that the `Ok` variant contains
  * @template E Type of the error that the `Err` variant contains
  */
-export type Result<T, E extends Error> =
-  & Enum<{
-    Ok: T;
-    Err: E;
-  }>
-  & ResultImpl<T, E>;
+export type Result<T, E extends Error> = EnumWithImpl<ResultImpl<T, E>>;
 
 export const Result = {
   /**
@@ -154,7 +160,7 @@ export const Result = {
    * @param data
    */
   Ok<T, E extends Error = never>(data: NoUndefined<T>): Result<T, E> {
-    return Enum.attach({ Ok: data }, new ResultImpl());
+    return new ResultImpl({ Ok: data }) as Result<T, E>;
   },
 
   /**
@@ -162,6 +168,6 @@ export const Result = {
    * @param err The error value
    */
   Err<T, E extends Error>(err: E): Result<T, E> {
-    return Enum.attach({ Err: err as NoUndefined<E> }, new ResultImpl());
+    return new ResultImpl({ Err: err as NoUndefined<E> }) as Result<T, E>;
   },
 };
