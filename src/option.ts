@@ -325,14 +325,14 @@ export const Option = {
    * @param data
    */
   Some<T>(data: NoUndefined<T>): Option<T> {
-    return new OptionImpl({ Some: data }) as Option<T>;
+    return Enum<Option<T>>({ Some: data }, OptionImpl);
   },
 
   /**
    * Creates an `Option` which contains no data.
    */
   None<T = never>(): Option<T> {
-    return new OptionImpl({ None: null }) as Option<T>;
+    return Enum<Option<T>>({ None: null }, OptionImpl);
   },
 
   /**

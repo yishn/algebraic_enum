@@ -256,7 +256,7 @@ export const Result = {
    * @param data
    */
   Ok<T, E extends Error = never>(data: NoUndefined<T>): Result<T, E> {
-    return new ResultImpl({ Ok: data }) as Result<T, E>;
+    return Enum<Result<T, E>>({ Ok: data }, ResultImpl);
   },
 
   /**
@@ -264,6 +264,6 @@ export const Result = {
    * @param err The error value
    */
   Err<T, E extends Error>(err: E): Result<T, E> {
-    return new ResultImpl({ Err: err as NoUndefined<E> }) as Result<T, E>;
+    return Enum<Result<T, E>>({ Err: err as NoUndefined<E> }, ResultImpl);
   },
 };

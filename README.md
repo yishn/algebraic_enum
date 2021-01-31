@@ -4,6 +4,8 @@ An algebraic enum type for TypeScript heavily inspired by Rust.
 
 ## Getting Started
 
+For optimal type safety, use this library in TypeScript's strict mode.
+
 ### Creating an Enum Type
 
 You can define an algebraic enum type by using the `Enum` helper type. Define
