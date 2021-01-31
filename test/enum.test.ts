@@ -1,4 +1,5 @@
-import { Enum, Matcher, Mut, NoUndefined } from "../src/enum.ts";
+import { Enum, Mut } from "../src/mod.ts";
+import { Matcher, NoUndefined } from "../src/enum.ts";
 import { assertEquals, assertThrows, expectType } from "./deps.ts";
 import { DefinitionFromEnum, TypeOf } from "./utils.ts";
 
