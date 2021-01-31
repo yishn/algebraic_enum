@@ -29,10 +29,12 @@ not need to attach any data to your variants, it's probably better to simply use
 the built-in `enum` construct for your enum type.
 
 As you can see, enum type values are plain JavaScript objects with no baggage
-attached. Simplified, the type `Status` is like the union of its variants,
-ensuring only one variant exists. That's the main idea, however `Enum` does a
-few other things in the background to ensure type safety and better
-autocompletion support.
+attached, which will simplify interoperability with other libraries.
+
+Roughly speaking, the type `Status` is like the union of its variants, ensuring
+only one variant exists. That's the main idea, however `Enum` does a few other
+things in the background to ensure type safety and better autocompletion
+support.
 
 ```ts
 // Simplified version of Enum:

@@ -32,7 +32,6 @@ export type Matcher<D extends EnumDefinition, T> =
 /**
  * Marks an enum type as mutable, so it can be mutated by `Enum.mutate`.
  */
-
 export type Mut<E extends Enum<EnumDefinition>> = E & { [mutableTag]?: true };
 
 /**
