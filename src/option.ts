@@ -342,7 +342,9 @@ export const Option = {
    *
    * @param value
    */
-  from<T>(value: T | null | undefined): Option<T> {
-    return value == null ? Option.None() : Option.Some(value as NoUndefined<T>);
+  from<T>(value: T | null | undefined): Option<NonNullable<T>> {
+    return value == null
+      ? Option.None()
+      : Option.Some<NonNullable<T>>(value as NoUndefined<NonNullable<T>>);
   },
 };
