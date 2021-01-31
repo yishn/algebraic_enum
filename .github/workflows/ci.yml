@@ -32,4 +32,6 @@ jobs:
           deno-version: ${{ matrix.deno }} # tests across multiple Deno versions
 
       - name: Run Tests
-        run: deno test -A --unstable --coverage
+        run: |
+          deno fmt --check
+          deno test -A --unstable --coverage
