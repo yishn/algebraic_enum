@@ -1,4 +1,4 @@
-import { Option } from "../src/mod.ts";
+import { Option } from "../src/option.ts";
 import { assert, assertEquals, expectType, TypeEqual } from "./deps.ts";
 
 Deno.test({
