@@ -28,6 +28,14 @@ Deno.test({
 });
 
 Deno.test({
+  name: "Enum() should simplify enum value creation",
+  fn() {
+    let msg = Enum<Message>().Plaintext("Hello World");
+    assertEquals(msg, { Plaintext: "Hello World" });
+  },
+});
+
+Deno.test({
   name: "Enum.match() has to be exhaustive",
   fn() {
     type M = Matcher<DefinitionFromEnum<Message>, number>;

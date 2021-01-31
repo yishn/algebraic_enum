@@ -22,9 +22,7 @@ declare const enumType: unique symbol;
  *   data: EnumImplData<MessageImpl<T>>
  * ) => Message<T>;
  *
- * let msg = new Message({
- *   Plaintext: "Hello World!"
- * });
+ * let msg = new Message({ Plaintext: "Hello World!" });
  *
  * await Enum.match(msg, {
  *   Plaintext: async () => await msg.send(),

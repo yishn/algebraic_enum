@@ -5,13 +5,13 @@ export type NoUndefined<T> = Exclude<T, undefined>;
 
 export type EnumDefinition = Record<string, any> & { _?: never };
 
-type EnumKeys<D extends EnumDefinition> = Exclude<keyof D, "_">;
+export type EnumKeys<D extends EnumDefinition> = Exclude<keyof D, "_">;
 
-type ExhaustiveMatcher<D extends EnumDefinition, T> = {
+export type ExhaustiveMatcher<D extends EnumDefinition, T> = {
   [K in EnumKeys<D>]: (data: NoUndefined<D[K]>) => T;
 };
 
-type WildcardMatcher<D extends EnumDefinition, T> =
+export type WildcardMatcher<D extends EnumDefinition, T> =
   & Partial<ExhaustiveMatcher<D, T>>
   & { _: () => T };
 
@@ -40,6 +40,9 @@ export type Mut<E extends Enum<EnumDefinition>> = E & { [mutableTag]?: true };
  *
  * // Or equivalently:
  * let msg = Enum<Message>({ Encrypted: [4, 8, 15, 16, 23, 42] });
+ *
+ * // If your environment supports Proxy, you can also write:
+ * let msg = Enum<Message>().Encrypted([4, 8, 15, 16, 23, 42]);
  * ```
  *
  * @template D Definitions of all variants of the enum
@@ -55,8 +58,21 @@ export type Enum<D extends EnumDefinition> =
     [mutableTag]?: unknown;
   }>;
 
-export function Enum<E extends Enum<EnumDefinition>>(value: E): E {
-  return value;
+export function Enum<E extends Enum<EnumDefinition>>(): ExhaustiveMatcher<
+  E extends Enum<infer D> ? D : never,
+  E
+>;
+export function Enum<E extends Enum<EnumDefinition>>(value: E): E;
+export function Enum<E extends Enum<EnumDefinition>>(value?: E): any {
+  if (value !== undefined) {
+    return value;
+  }
+
+  return new Proxy({}, {
+    get(_, variant) {
+      return (data: any) => ({ [variant]: data });
+    },
+  });
 }
 
 /**
