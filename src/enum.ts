@@ -65,23 +65,17 @@ export type Enum<D extends EnumDefinition> =
     readonly [mutableTag]?: unknown;
   };
 
-export function Enum<E extends Enum<EnumDefinition>>(value: E): E {
-  return value;
-}
-
-/**
- * Creates a class instance that behaves like an enum from an `EnumImpl` class.
- * See `EnumImpl` for usage.
- *
- * @param Impl
- * @param value
- */
-Enum.new = function <I extends EnumImpl<EnumDefinition>>(
-  Impl: new (value: EnumImplValue<I>) => I,
+export function Enum<E extends Enum<EnumDefinition>>(value: E): E;
+export function Enum<I extends Enum<EnumDefinition> & EnumImpl<EnumDefinition>>(
   value: EnumImplValue<I>,
-): EnumWithImpl<I> {
-  return new Impl(value) as EnumWithImpl<I>;
-};
+  Impl: new (value: EnumImplValue<I>) => EnumImpl<EnumDefinition>,
+): I;
+export function Enum<E extends Enum<EnumDefinition>>(
+  value: unknown,
+  Impl?: new (value: unknown) => any,
+): any {
+  return Impl == null ? value : new Impl(value);
+}
 
 /**
  * Inspects the given enum `value` and executes code based on which variant

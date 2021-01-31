@@ -19,7 +19,7 @@ declare const enumType: unique symbol;
  *
  * type Message<T> = EnumWithImpl<MessageImpl<T>>;
  * const Message = <T>(value: EnumImplValue<MessageImpl<T>>) =>
- *   Enum.new<MessageImpl<T>>(MessageImpl, value);
+ *   Enum<Message<T>>(value, MessageImpl);
  *
  * let msg = Message({ Plaintext: "Hello World!" });
  *

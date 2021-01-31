@@ -26,7 +26,7 @@ class MessageImpl<T> extends EnumImpl<{
 
 type Message<T> = EnumWithImpl<MessageImpl<T>>;
 const Message = <T>(value: EnumImplValue<MessageImpl<T>>) =>
-  Enum.new<MessageImpl<T>>(MessageImpl, value);
+  Enum<Message<T>>(value, MessageImpl);
 
 Deno.test({
   name: "EnumWithImpl should be an Enum",
