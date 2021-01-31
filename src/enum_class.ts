@@ -17,7 +17,7 @@ declare const enumType: unique symbol;
  *   }
  * }
  *
- * type Message<T> = EnumWithImpl<MessageImpl<T>>;
+ * type Message<T> = EnumClass<MessageImpl<T>>;
  * const Message = <T>(value: EnumImplValue<MessageImpl<T>>) =>
  *   Enum<Message<T>>(value, MessageImpl);
  *
@@ -41,6 +41,6 @@ export type EnumImplValue<I extends EnumImpl<EnumDefinition>> = NoUndefined<
   I[typeof enumType]
 >;
 
-export type EnumWithImpl<I extends EnumImpl<EnumDefinition>> =
+export type EnumClass<I extends EnumImpl<EnumDefinition>> =
   & EnumImplValue<I>
   & I;

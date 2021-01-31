@@ -7,7 +7,8 @@ An algebraic enum type for TypeScript heavily inspired by Rust.
 ### Creating an Enum Type
 
 You can define an algebraic enum type by using the `Enum` helper type. Define
-and provide your variants and data types in a generic to `Enum`:
+and provide your variants and data types in a generic to `Enum`. Note that
+variant names cannot be `_`, as it is reserved.
 
 ```ts
 import { Enum } from "https://deno.land/x/algebraic_enum/src/mod.ts";
@@ -47,7 +48,8 @@ type Status =
 ### Different Variant Data Types
 
 You can attach data of different data types to each variant of an enum. One
-restriction is that you cannot use `undefined` as your variant data type.
+restriction is that you cannot use `undefined` or `void` as your variant data
+type.
 
 ```ts
 import { Enum } from "https://deno.land/x/algebraic_enum/src/mod.ts";
@@ -140,7 +142,8 @@ let pending = Enum<Status<number>>({ Pending: null });
 
 By default, enum types are shallow read-only, meaning you can't change the
 variant of an existing enum value or assigning different data to an existing
-variant (This is prevented by TypeScript's type system), but you can mutate the
+variant (This is prevented by TypeScript's type system which doesn't incur
+additional runtime performance penalty), but it's still possible mutate the
 underlying variant data itself.
 
 With `Enum.mutate`, you can change the variant of an existing enum value itself,
@@ -167,4 +170,77 @@ let mutableStatus = Enum<Mut<Status<string>>>({ Failure: null });
 
 Enum.mutate(mutableStatus, { Success: "Mutated!" });
 // `mutableStatus` is now a `Success` variant
+```
+
+### Enum Classes
+
+If you want to define methods on your enum for easier readability, you can
+create an enum class which behaves like a normal enum and also like a class
+where you can have instance methods.
+
+First, you need to define your enum methods separately, extending from the
+abstract class `EnumImpl` along with your enum variants definition object. Your
+actual type can be defined using the `EnumClass` helper type.
+
+```ts
+import {
+  Enum,
+  EnumClass,
+  EnumImpl,
+  EnumImplValue,
+} from "https://deno.land/x/algebraic_enum/src/mod.ts";
+
+class StatusImpl<T> extends EnumImpl<{
+  Success: T;
+  Failure: {
+    code: number;
+    message: string;
+  };
+  Pending: null;
+}> {
+  // Make sure to have the correct enum class type as `this`, otherwise you
+  // won't be able to treat `this` as an `Enum`.
+  getMessage(this: Status<T>): string {
+    return Enum.match(this, {
+      Success: (data) => data,
+      Failure: (data) => data.message,
+      Pending: (data) => "Pending...",
+    });
+  }
+
+  // Declare `this` as mutable to enable enum mutation.
+  fail(this: Mut<Status<T>>, code: number, message: string): void {
+    Enum.mutate(this, { Failure: { code, message } });
+  }
+}
+
+type Status<T> = EnumClass<StatusImpl<T>>;
+```
+
+To construct a new instance of `Status`, you use the `Enum()` helper function by
+additionally passing along the `EnumImpl` class.
+
+```ts
+let status = Enum<Status<string>>({ Success: "Hello!" }, StatusImpl);
+let message = status.getMessage();
+message.fail(); // Compilation error, since `message` is not declared as mutable
+
+let mutableStatus = Enum<Mut<Status<string>>>({ Pending: null }, StatusImpl);
+mutableStatus.fail(404, "Not found");
+```
+
+It's usual to create your own constructor function to construct new instances of
+your enum class.
+
+```ts
+type Status<T> = EnumClass<StatusImpl<T>>;
+const Status = <T>(value: EnumImplValue<StatusImpl<T>>) =>
+  Enum<Status<T>>(value, StatusImpl);
+
+let status = Status<string>({ Success: "Hello!" });
+let message = status.getMessage();
+message.fail(); // Compilation error, since `message` is not declared as mutable
+
+let mutableStatus = Status<string>({ Pending: null }) as Mut<Status<string>>;
+mutableStatus.fail(404, "Not found");
 ```

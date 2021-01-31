@@ -1,4 +1,4 @@
-import type { EnumImpl, EnumImplValue } from "./enum_impl.ts";
+import type { EnumImpl, EnumImplValue } from "./enum_class.ts";
 
 declare const definitionTag: unique symbol;
 declare const mutableTag: unique symbol;
@@ -35,7 +35,7 @@ export type Matcher<D extends EnumDefinition, T> =
 export type Mut<E extends Enum<EnumDefinition>> = E & { [mutableTag]?: true };
 
 /**
- * Create an enum type by putting in all your variants in the generic `D`. The
+ * Create an enum type by defining all your variants in the generic `D`. The
  * data type contained in the variants cannot be `undefined`. The variant name
  * cannot be `_`, as it is reserved.
  *

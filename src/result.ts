@@ -1,5 +1,5 @@
 import { Enum, NoUndefined } from "./enum.ts";
-import { EnumImpl, EnumWithImpl } from "./enum_impl.ts";
+import { EnumClass, EnumImpl } from "./enum_class.ts";
 import { Option } from "./option.ts";
 
 class ResultImpl<T, E extends Error> extends EnumImpl<{
@@ -247,7 +247,7 @@ class ResultImpl<T, E extends Error> extends EnumImpl<{
  * @template T Type of the data that the `Ok` variant contains
  * @template E Type of the error that the `Err` variant contains
  */
-export type Result<T, E extends Error> = EnumWithImpl<ResultImpl<T, E>>;
+export type Result<T, E extends Error> = EnumClass<ResultImpl<T, E>>;
 
 export const Result = {
   /**

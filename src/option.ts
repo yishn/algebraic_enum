@@ -1,5 +1,5 @@
 import { Enum, Mut, NoUndefined } from "./enum.ts";
-import { EnumImpl, EnumWithImpl } from "./enum_impl.ts";
+import { EnumClass, EnumImpl } from "./enum_class.ts";
 import { Result } from "./result.ts";
 
 class OptionImpl<T> extends EnumImpl<{
@@ -316,7 +316,7 @@ class OptionImpl<T> extends EnumImpl<{
  *
  * @template T Type of the data that the `Option` contains
  */
-export type Option<T> = EnumWithImpl<OptionImpl<T>>;
+export type Option<T> = EnumClass<OptionImpl<T>>;
 
 export const Option = {
   /**
