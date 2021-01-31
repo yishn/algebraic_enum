@@ -136,20 +136,16 @@ Enum.match = <D extends EnumDefinition, T>(
   value: Enum<D>,
   matcher: Matcher<D, T>,
 ): T => {
-  let variant: EnumVariants<D> | undefined;
+  let variant: EnumVariants<D> | "_" = "_";
 
   for (let key in value) {
-    if (value[key] !== undefined) {
+    if (value[key] !== undefined && matcher[key] !== undefined) {
       variant = key as EnumVariants<D>;
       break;
     }
   }
 
-  if (variant === undefined) {
-    throw new Error("No variants found on `value`.");
-  }
-
-  if (matcher[variant] !== undefined) {
+  if (variant !== "_") {
     return matcher[variant]!(value[variant]!);
   } else if ("_" in matcher && matcher._ !== undefined) {
     return (matcher as WildcardMatcher<D, T>)._();

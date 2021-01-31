@@ -94,6 +94,7 @@ Deno.test({
         Encrypted: (data) => data.filter((x) => x !== 0).length,
       });
 
+    assertThrows(() => run({} as any));
     assertThrows(() => run({ Invalid: null } as any));
     assertEquals(run({ Quit: null }), -1);
     assertEquals(run({ Plaintext: "Hello!" }), 6);
@@ -105,7 +106,7 @@ Deno.test({
         _: () => -1,
       });
 
-    assertThrows(() => run({} as any));
+    assertEquals(run({} as any), -1);
     assertEquals(run({ Invalid: null } as any), -1);
     assertEquals(run({ Quit: null }), -1);
     assertEquals(run({ Plaintext: "Hello!" }), 6);
