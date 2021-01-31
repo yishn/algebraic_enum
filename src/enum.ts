@@ -1,14 +1,24 @@
+import type { EnumImpl, EnumImplValue, EnumWithImpl } from "./enum_impl.ts";
+
 declare const definitionTag: unique symbol;
 declare const mutableTag: unique symbol;
 
-export type NoUndefined<T> = Exclude<T, undefined>;
+export type NoUndefined<T> = Exclude<T, undefined | void>;
 
 export type EnumDefinition = Record<string, any> & { _?: never };
 
-export type EnumKeys<D extends EnumDefinition> = Exclude<keyof D, "_">;
+export type DefinitionFromEnum<E extends Enum<EnumDefinition>> = E extends
+  Enum<infer D> ? D : never;
+
+export type EnumVariants<D extends EnumDefinition> = Exclude<keyof D, "_">;
+
+export type EnumVariantData<
+  D extends EnumDefinition,
+  V extends EnumVariants<D>,
+> = NoUndefined<D[V]>;
 
 export type ExhaustiveMatcher<D extends EnumDefinition, T> = {
-  [K in EnumKeys<D>]: (data: NoUndefined<D[K]>) => T;
+  [V in EnumVariants<D>]: (data: EnumVariantData<D, V>) => T;
 };
 
 export type WildcardMatcher<D extends EnumDefinition, T> =
@@ -22,6 +32,7 @@ export type Matcher<D extends EnumDefinition, T> =
 /**
  * Marks an enum type as mutable, so it can be mutated by `Enum.mutate`.
  */
+
 export type Mut<E extends Enum<EnumDefinition>> = E & { [mutableTag]?: true };
 
 /**
@@ -40,40 +51,38 @@ export type Mut<E extends Enum<EnumDefinition>> = E & { [mutableTag]?: true };
  *
  * // Or equivalently:
  * let msg = Enum<Message>({ Encrypted: [4, 8, 15, 16, 23, 42] });
- *
- * // If your environment supports Proxy, you can also write:
- * let msg = Enum<Message>().Encrypted([4, 8, 15, 16, 23, 42]);
  * ```
  *
  * @template D Definitions of all variants of the enum
  */
 export type Enum<D extends EnumDefinition> =
   & {
-    [K in EnumKeys<D>]:
-      & { readonly [L in Exclude<EnumKeys<D>, K>]?: never }
-      & { readonly [L in K]-?: NoUndefined<D[K]> };
-  }[EnumKeys<D>]
-  & Readonly<{
-    [definitionTag]?: D;
-    [mutableTag]?: unknown;
-  }>;
+    [V in EnumVariants<D>]:
+      & { readonly [_ in Exclude<EnumVariants<D>, V>]?: never }
+      & { readonly [_ in V]-?: EnumVariantData<D, V> };
+  }[EnumVariants<D>]
+  & {
+    readonly [definitionTag]?: D;
+    readonly [mutableTag]?: unknown;
+  };
 
-export function Enum<E extends Enum<EnumDefinition>>(): ExhaustiveMatcher<
-  E extends Enum<infer D> ? D : never,
-  E
->;
-export function Enum<E extends Enum<EnumDefinition>>(value: E): E;
-export function Enum<E extends Enum<EnumDefinition>>(value?: E): any {
-  if (value !== undefined) {
-    return value;
-  }
-
-  return new Proxy({}, {
-    get(_, variant) {
-      return (data: any) => ({ [variant]: data });
-    },
-  });
+export function Enum<E extends Enum<EnumDefinition>>(value: E): E {
+  return value;
 }
+
+/**
+ * Creates a class instance that behaves like an enum from an `EnumImpl` class.
+ * See `EnumImpl` for usage.
+ *
+ * @param Impl
+ * @param value
+ */
+Enum.new = function <I extends EnumImpl<EnumDefinition>>(
+  Impl: new (value: EnumImplValue<I>) => I,
+  value: EnumImplValue<I>,
+): EnumWithImpl<I> {
+  return new Impl(value) as EnumWithImpl<I>;
+};
 
 /**
  * Inspects the given enum `value` and executes code based on which variant
@@ -127,15 +136,21 @@ Enum.match = <D extends EnumDefinition, T>(
   value: Enum<D>,
   matcher: Matcher<D, T>,
 ): T => {
-  let key = (Object.keys(value) as EnumKeys<D>[])
-    .find((key) => value[key] !== undefined);
+  let variant: EnumVariants<D> | undefined;
 
-  if (key === undefined) {
+  for (let key in value) {
+    if (value[key] !== undefined) {
+      variant = key as EnumVariants<D>;
+      break;
+    }
+  }
+
+  if (variant === undefined) {
     throw new Error("No variants found on `value`.");
   }
 
-  if (matcher[key] !== undefined) {
-    return matcher[key]!(value[key]!);
+  if (matcher[variant] !== undefined) {
+    return matcher[variant]!(value[variant]!);
   } else if ("_" in matcher && matcher._ !== undefined) {
     return (matcher as WildcardMatcher<D, T>)._();
   }

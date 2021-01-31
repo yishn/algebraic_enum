@@ -1,7 +1,7 @@
 import { Enum, Mut } from "../src/mod.ts";
-import { Matcher, NoUndefined } from "../src/enum.ts";
+import { DefinitionFromEnum, Matcher, NoUndefined } from "../src/enum.ts";
 import { assertEquals, assertThrows, expectType } from "./deps.ts";
-import { DefinitionFromEnum, TypeOf } from "./utils.ts";
+import { TypeOf } from "./utils.ts";
 
 type Message = Enum<{
   Quit: null;
@@ -30,8 +30,14 @@ Deno.test({
 Deno.test({
   name: "Enum() should simplify enum value creation",
   fn() {
-    let msg = Enum<Message>().Plaintext("Hello World");
+    let msg = Enum<Message>({ Plaintext: "Hello World" });
     assertEquals(msg, { Plaintext: "Hello World" });
+
+    msg = Enum<Message>({ Quit: null });
+    assertEquals(msg, { Quit: null });
+
+    msg = Enum<Message>({ Encrypted: [1, 2, 3] });
+    assertEquals(msg, { Encrypted: [1, 2, 3] });
   },
 });
 
@@ -110,10 +116,10 @@ Deno.test({
 Deno.test({
   name: "Enum.mutate() should be able to change variant",
   fn() {
-    let msg = Enum<Mut<Message>>({ Plaintext: "Hello!" });
+    let msg: Mut<Message> = { Plaintext: "Hello!" };
     assertEquals(msg, { Plaintext: "Hello!" });
 
-    let other = Enum<Message>({ Encrypted: [5, 4, 3] });
+    let other = { Encrypted: [5, 4, 3] };
     Enum.mutate(msg, other);
 
     assertEquals(msg, { Encrypted: [5, 4, 3] });

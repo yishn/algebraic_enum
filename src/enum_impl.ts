@@ -18,11 +18,10 @@ declare const enumType: unique symbol;
  * }
  *
  * type Message<T> = EnumWithImpl<MessageImpl<T>>;
- * const Message = MessageImpl as new <T>(
- *   data: EnumImplData<MessageImpl<T>>
- * ) => Message<T>;
+ * const Message = <T>(value: EnumImplValue<MessageImpl<T>>) =>
+ *   Enum.new<MessageImpl<T>>(MessageImpl, value);
  *
- * let msg = new Message({ Plaintext: "Hello World!" });
+ * let msg = Message({ Plaintext: "Hello World!" });
  *
  * await Enum.match(msg, {
  *   Plaintext: async () => await msg.send(),
@@ -38,10 +37,10 @@ export abstract class EnumImpl<D extends EnumDefinition> {
   }
 }
 
-export type EnumImplData<I extends EnumImpl<EnumDefinition>> = NoUndefined<
+export type EnumImplValue<I extends EnumImpl<EnumDefinition>> = NoUndefined<
   I[typeof enumType]
 >;
 
 export type EnumWithImpl<I extends EnumImpl<EnumDefinition>> =
-  & EnumImplData<I>
+  & EnumImplValue<I>
   & I;

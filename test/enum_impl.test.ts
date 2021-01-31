@@ -1,5 +1,5 @@
 import { EnumDefinition, NoUndefined } from "../src/enum.ts";
-import { Enum, EnumImpl, EnumImplData, EnumWithImpl, Mut } from "../src/mod.ts";
+import { Enum, EnumImpl, EnumImplValue, EnumWithImpl, Mut } from "../src/mod.ts";
 import { assert, assertEquals, delay, expectType } from "./deps.ts";
 import { TypeOf } from "./utils.ts";
 
@@ -24,15 +24,14 @@ class MessageImpl<T> extends EnumImpl<{
 }
 
 type Message<T> = EnumWithImpl<MessageImpl<T>>;
-const Message = MessageImpl as new <T>(
-  data: EnumImplData<MessageImpl<T>>,
-) => Message<T>;
+const Message = <T>(value: EnumImplValue<MessageImpl<T>>) =>
+  Enum.new<MessageImpl<T>>(MessageImpl, value);
 
 Deno.test({
   name: "EnumWithImpl should be an Enum",
   fn() {
-    let msg = new Message<string>({ Quit: null });
-    type PureEnum = EnumImplData<MessageImpl<string>>;
+    let msg = Message<string>({ Quit: null });
+    type PureEnum = EnumImplValue<MessageImpl<string>>;
 
     expectType<PureEnum>(msg);
     expectType<TypeOf<PureEnum, Enum<EnumDefinition>>>(true);
@@ -43,7 +42,7 @@ Deno.test({
 Deno.test({
   name: "EnumWithImpl should be filled with methods",
   async fn() {
-    let msg = new Message<string>({ Plaintext: "Hello" });
+    let msg = Message({ Plaintext: "Hello" });
     await msg.send();
   },
 });
@@ -51,9 +50,7 @@ Deno.test({
 Deno.test({
   name: "EnumWithImpl should interact well with Enum.match() and Enum.mutate()",
   async fn() {
-    let msg = new Message<string>({ Plaintext: "Hello" }) as Mut<
-      Message<string>
-    >;
+    let msg = Message({ Plaintext: "Hello" }) as Mut<Message<string>>;
     msg.encrypt();
 
     assert(Enum.match(msg, {
@@ -61,7 +58,7 @@ Deno.test({
       _: () => false,
     }));
 
-    msg = new Message<string>({ Quit: null }) as Mut<Message<string>>;
+    msg = Message({ Quit: null }) as Mut<Message<string>>;
     msg.encrypt();
 
     assert(Enum.match(msg, {
