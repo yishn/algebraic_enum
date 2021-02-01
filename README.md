@@ -250,7 +250,7 @@ additionally passing along the `EnumImpl` class.
 ```ts
 let status = Enum<Status<string>>({ Success: "Hello!" }, StatusImpl);
 let message = status.getMessage();
-message.fail(); // Compilation error, since `message` is not declared as mutable
+message.fail(404, "Not found"); // Compilation error, since `message` is not declared as mutable
 
 let mutableStatus = Enum<Mut<Status<string>>>({ Pending: null }, StatusImpl);
 mutableStatus.fail(404, "Not found");
@@ -266,7 +266,7 @@ const Status = <T>(value: EnumClassValue<StatusImpl<T>>) =>
 
 let status = Status<string>({ Success: "Hello!" });
 let message = status.getMessage();
-message.fail(); // Compilation error, since `message` is not declared as mutable
+message.fail(404, "Not found"); // Compilation error, since `message` is not declared as mutable
 
 let mutableStatus = Status<string>({ Pending: null }) as Mut<Status<string>>;
 mutableStatus.fail(404, "Not found");
