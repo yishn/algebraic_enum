@@ -6,6 +6,13 @@ An algebraic enum type for TypeScript heavily inspired by Rust.
 
 For optimal type safety, use this library in TypeScript's strict mode.
 
+- [Creating an Enum Type](#creating-an-enum-type)
+- [Different Variant Data Types](#different-variant-data-types)
+- [Match Data](#match-data)
+- [Generic Enum Types](#generic-enum-types)
+- [Mutate Enum Variant](#mutate-enum-variant)
+- [Enum Classes](#enum-classes)
+
 ### Creating an Enum Type
 
 You can define an algebraic enum type by using the `Enum` helper type. Define
