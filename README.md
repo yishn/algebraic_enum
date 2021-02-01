@@ -145,7 +145,7 @@ let pending = Enum<Status<number>>({ Pending: null });
 By default, enum types are shallow read-only, meaning you can't change the
 variant of an existing enum value or assigning different data to an existing
 variant (This is prevented by TypeScript's type system which doesn't incur
-additional runtime performance penalty), but it's still possible mutate the
+additional runtime performance penalty), but it's still possible to mutate the
 underlying variant data itself.
 
 With `Enum.mutate`, you can change the variant of an existing enum value itself,
@@ -183,6 +183,9 @@ where you can have instance methods.
 First, you need to define your enum methods separately, extending from the
 abstract class `EnumImpl` along with your enum variants definition object. Your
 actual type can be defined using the `EnumClass` helper type.
+
+Make sure your method and property names on your `EnumImpl` class does not
+collide with your variant names.
 
 ```ts
 import {
