@@ -1,4 +1,4 @@
-# algebraic_enum
+# algebraic_enum [![CI Status](https://github.com/yishn/algebraic_enum/workflows/CI/badge.svg?event=push)](https://github.com/yishn/algebraic_enum/actions)
 
 An algebraic enum type for TypeScript heavily inspired by Rust.
 
@@ -198,8 +198,8 @@ collide with your variant names.
 import {
   Enum,
   EnumClass,
-  EnumImpl,
   EnumClassValue,
+  EnumImpl,
 } from "https://deno.land/x/algebraic_enum/src/mod.ts";
 
 class StatusImpl<T> extends EnumImpl<{

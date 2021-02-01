@@ -1,4 +1,4 @@
-import type { EnumImpl, EnumClassValue } from "./enum_class.ts";
+import type { EnumClassValue, EnumImpl } from "./enum_class.ts";
 
 declare const definitionTag: unique symbol;
 declare const mutableTag: unique symbol;

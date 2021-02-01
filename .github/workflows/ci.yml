@@ -29,9 +29,18 @@ jobs:
       - name: Setup Deno
         uses: denolib/setup-deno@v2
         with:
-          deno-version: ${{ matrix.deno }} # tests across multiple Deno versions
+          deno-version: ${{ matrix.deno }}
+
+      - name: Setup Node.js 12
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12.x
+
+      - name: Install Dependencies
+        run: npm install
 
       - name: Run Tests
-        run: |
-          deno fmt --check
-          deno test -A --unstable --coverage
+        run: npm test
+
+      - name: Create Distribution Artifacts
+        run: npm run dist

@@ -1,6 +1,6 @@
 import { EnumDefinition, NoUndefined } from "../src/enum.ts";
 import { Enum, Mut } from "../src/mod.ts";
-import { EnumClass, EnumImpl, EnumClassValue } from "../src/enum_class.ts";
+import { EnumClass, EnumClassValue, EnumImpl } from "../src/enum_class.ts";
 import { assert, assertEquals, delay, expectType } from "./deps.ts";
 import { TypeOf } from "./utils.ts";
 

@@ -1,0 +1,6 @@
+node_modules/
+.vscode/
+ci/
+test/
+src/
+*.tgz

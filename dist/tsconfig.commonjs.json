@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "target": "ES2019",
+    "module": "commonjs",
+    "rootDir": "./src",
+    "outDir": "./commonjs",
+    "strict": true,
+    "sourceMap": true,
+    "declaration": true
+  }
+}

@@ -1,1 +1,6 @@
-.vscode
+node_modules/
+.vscode/
+dist/commonjs/
+dist/esm/
+dist/src/
+*.tgz
