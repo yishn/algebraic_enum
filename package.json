@@ -1,13 +1,14 @@
 {
   "name": "algebraic_enum",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "An algebraic enum type for TypeScript heavily inspired by Rust.",
   "main": "./dist/commonjs/mod.js",
   "module": "./dist/esm/mod.js",
   "scripts": {
     "format": "deno fmt README.md ci src test",
     "test": "npm run format -- --check && deno test --unstable --coverage",
-    "dist": "deno run --unstable --allow-read --allow-write --allow-run ./ci/dist.ts"
+    "dist": "deno run --unstable --allow-read --allow-write --allow-run ./ci/dist.ts",
+    "prepublishOnly": "npm run dist"
   },
   "repository": {
     "type": "git",

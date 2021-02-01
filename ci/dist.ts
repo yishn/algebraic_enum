@@ -57,13 +57,7 @@ async function compile() {
   await exec("npx tsc --project ./dist/tsconfig.esm.json");
 }
 
-async function pack() {
-  console.log("Packing into a publishable artifact...");
-  await exec("npm pack");
-}
-
 if (import.meta.main) {
   await prepareSources();
   await compile();
-  await pack();
 }
