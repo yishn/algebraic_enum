@@ -6,12 +6,27 @@ An algebraic enum type for TypeScript heavily inspired by Rust.
 
 For optimal type safety, use this library in TypeScript's strict mode.
 
+- [Installation](#installation)
 - [Creating an Enum Type](#creating-an-enum-type)
 - [Different Variant Data Types](#different-variant-data-types)
 - [Match Data](#match-data)
 - [Generic Enum Types](#generic-enum-types)
 - [Mutate Enum Variant](#mutate-enum-variant)
 - [Enum Classes](#enum-classes)
+
+### Installation
+
+Using with Deno is as simple as adding the following export to your `deps.ts`:
+
+```ts
+export * from "https://deno.land/x/algebraic_enum/src/mod.ts";
+```
+
+For Node.js, you can install with npm:
+
+```
+$ npm install algebraic_enum
+```
 
 ### Creating an Enum Type
 
