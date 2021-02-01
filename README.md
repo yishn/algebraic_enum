@@ -199,7 +199,7 @@ import {
   Enum,
   EnumClass,
   EnumImpl,
-  EnumImplValue,
+  EnumClassValue,
 } from "https://deno.land/x/algebraic_enum/src/mod.ts";
 
 class StatusImpl<T> extends EnumImpl<{
@@ -246,7 +246,7 @@ your enum class.
 
 ```ts
 type Status<T> = EnumClass<StatusImpl<T>>;
-const Status = <T>(value: EnumImplValue<StatusImpl<T>>) =>
+const Status = <T>(value: EnumClassValue<StatusImpl<T>>) =>
   Enum<Status<T>>(value, StatusImpl);
 
 let status = Status<string>({ Success: "Hello!" });

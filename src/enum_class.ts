@@ -18,7 +18,7 @@ declare const enumType: unique symbol;
  * }
  *
  * type Message<T> = EnumClass<MessageImpl<T>>;
- * const Message = <T>(value: EnumImplValue<MessageImpl<T>>) =>
+ * const Message = <T>(value: EnumClassValue<MessageImpl<T>>) =>
  *   Enum<Message<T>>(value, MessageImpl);
  *
  * let msg = Message({ Plaintext: "Hello World!" });
@@ -37,10 +37,10 @@ export abstract class EnumImpl<D extends EnumDefinition> {
   }
 }
 
-export type EnumImplValue<I extends EnumImpl<EnumDefinition>> = NoUndefined<
+export type EnumClassValue<I extends EnumImpl<EnumDefinition>> = NoUndefined<
   I[typeof enumType]
 >;
 
 export type EnumClass<I extends EnumImpl<EnumDefinition>> =
-  & EnumImplValue<I>
+  & EnumClassValue<I>
   & I;

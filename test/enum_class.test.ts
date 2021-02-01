@@ -1,6 +1,6 @@
 import { EnumDefinition, NoUndefined } from "../src/enum.ts";
 import { Enum, Mut } from "../src/mod.ts";
-import { EnumClass, EnumImpl, EnumImplValue } from "../src/enum_class.ts";
+import { EnumClass, EnumImpl, EnumClassValue } from "../src/enum_class.ts";
 import { assert, assertEquals, delay, expectType } from "./deps.ts";
 import { TypeOf } from "./utils.ts";
 
@@ -25,14 +25,14 @@ class MessageImpl<T> extends EnumImpl<{
 }
 
 type Message<T> = EnumClass<MessageImpl<T>>;
-const Message = <T>(value: EnumImplValue<MessageImpl<T>>) =>
+const Message = <T>(value: EnumClassValue<MessageImpl<T>>) =>
   Enum<Message<T>>(value, MessageImpl);
 
 Deno.test({
   name: "EnumClass should be an Enum",
   fn() {
     let msg = Message<string>({ Quit: null });
-    type PureEnum = EnumImplValue<MessageImpl<string>>;
+    type PureEnum = EnumClassValue<MessageImpl<string>>;
 
     expectType<PureEnum>(msg);
     expectType<TypeOf<PureEnum, Enum<EnumDefinition>>>(true);

@@ -1,4 +1,4 @@
-import type { EnumImpl, EnumImplValue } from "./enum_class.ts";
+import type { EnumImpl, EnumClassValue } from "./enum_class.ts";
 
 declare const definitionTag: unique symbol;
 declare const mutableTag: unique symbol;
@@ -67,8 +67,8 @@ export type Enum<D extends EnumDefinition> =
 
 export function Enum<E extends Enum<EnumDefinition>>(value: E): E;
 export function Enum<I extends Enum<EnumDefinition> & EnumImpl<EnumDefinition>>(
-  value: EnumImplValue<I>,
-  Impl: new (value: EnumImplValue<I>) => EnumImpl<EnumDefinition>,
+  value: EnumClassValue<I>,
+  Impl: new (value: EnumClassValue<I>) => EnumImpl<EnumDefinition>,
 ): I;
 export function Enum(
   value: unknown,
