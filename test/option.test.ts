@@ -1,5 +1,5 @@
 import { Option } from "../src/option.ts";
-import { assert, assertEquals, expectType, TypeEqual } from "./deps.ts";
+import { assert, assertEquals, expectType, TypeEqual } from "../dev_deps.ts";
 
 Deno.test({
   name: "Construct Option classes",

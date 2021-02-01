@@ -1,7 +1,7 @@
 import { EnumDefinition, NoUndefined } from "../src/enum.ts";
 import { Enum, Mut } from "../src/mod.ts";
 import { EnumClass, EnumClassValue, EnumImpl } from "../src/enum_class.ts";
-import { assert, assertEquals, delay, expectType } from "./deps.ts";
+import { assert, assertEquals, delay, expectType } from "../dev_deps.ts";
 import { TypeOf } from "./utils.ts";
 
 class MessageImpl<T> extends EnumImpl<{

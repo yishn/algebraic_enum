@@ -5,10 +5,10 @@
   "main": "./dist/commonjs/mod.js",
   "module": "./dist/esm/mod.js",
   "scripts": {
+    "prepublishOnly": "npm run dist",
     "format": "deno fmt README.md ci src test",
     "test": "npm run format -- --check && deno test --unstable --coverage",
-    "dist": "deno run --unstable --allow-read --allow-write --allow-run ./ci/dist.ts",
-    "prepublishOnly": "npm run dist"
+    "dist": "deno run --unstable --allow-read --allow-write --allow-run ./ci/dist.ts"
   },
   "repository": {
     "type": "git",

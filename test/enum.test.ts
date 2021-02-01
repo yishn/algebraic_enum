@@ -1,6 +1,6 @@
 import { Enum, Mut } from "../src/mod.ts";
 import { DefinitionFromEnum, Matcher, NoUndefined } from "../src/enum.ts";
-import { assertEquals, assertThrows, expectType } from "./deps.ts";
+import { assertEquals, assertThrows, expectType } from "../dev_deps.ts";
 import { TypeOf } from "./utils.ts";
 
 type Message = Enum<{

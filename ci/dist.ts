@@ -1,22 +1,7 @@
-import { move } from "https://deno.land/std@0.85.0/fs/move.ts";
-import {
-  copy,
-  ensureDir,
-  pathFromFileUrl,
-  resolvePath,
-  walkDir,
-} from "./deps.ts";
-
-const pkg = JSON.parse(
-  Deno.readTextFileSync(new URL("../package.json", import.meta.url)),
-) as {
-  name: string;
-  version: string;
-};
+import { copy, ensureDir, pathFromFileUrl, walkDir } from "../dev_deps.ts";
 
 const rootDir = pathFromFileUrl(new URL("../", import.meta.url));
 const sourceDir = pathFromFileUrl(new URL("../src", import.meta.url));
-const distDir = pathFromFileUrl(new URL("../dist", import.meta.url));
 const distSourceDir = pathFromFileUrl(new URL("../dist/src", import.meta.url));
 
 async function prepareSources() {
