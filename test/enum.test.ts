@@ -2,7 +2,6 @@ import { Enum, Mut } from "../src/mod.ts";
 import { DefinitionFromEnum, Matcher, NoUndefined } from "../src/enum.ts";
 import { assertEquals, assertThrows, expectType } from "../dev_deps.ts";
 import { TypeOf } from "./utils.ts";
-import { memo } from "../src/utils.ts";
 
 type Message = Enum<{
   Quit: null;
@@ -10,20 +9,14 @@ type Message = Enum<{
   Encrypted: number[];
 }>;
 
-const Message = memo(() =>
-  Enum.factory<Message>({
-    Quit: undefined,
-    Plaintext: undefined,
-    Encrypted: undefined,
-  })
-);
+const Message = Enum.proxyFactory<Message>();
 
 Deno.test({
   name: "Enums can contain one and only one variant",
   fn() {
-    expectType<Message>(Message().Quit(null));
-    expectType<Message>(Message().Plaintext("Hello World!"));
-    expectType<Message>(Message().Encrypted([4, 8, 15, 16, 23, 42]));
+    expectType<Message>(Message.Quit(null));
+    expectType<Message>(Message.Plaintext("Hello World!"));
+    expectType<Message>(Message.Encrypted([4, 8, 15, 16, 23, 42]));
 
     expectType<TypeOf<{}, Message>>(false);
     expectType<TypeOf<{ Quit: 5 }, Message>>(false);
@@ -39,13 +32,13 @@ Deno.test({
 Deno.test({
   name: "Enum factory should simplify enum value creation",
   fn() {
-    let msg = Message().Plaintext("Hello World");
+    let msg = Message.Plaintext("Hello World");
     assertEquals(msg, { Plaintext: "Hello World" });
 
-    msg = Message().Quit(null);
+    msg = Message.Quit(null);
     assertEquals(msg, { Quit: null });
 
-    msg = Message().Encrypted([1, 2, 3]);
+    msg = Message.Encrypted([1, 2, 3]);
     assertEquals(msg, { Encrypted: [1, 2, 3] });
   },
 });
@@ -105,9 +98,9 @@ Deno.test({
 
     assertThrows(() => run({} as any));
     assertThrows(() => run({ Invalid: null } as any));
-    assertEquals(run(Message().Quit(null)), -1);
-    assertEquals(run(Message().Plaintext("Hello!")), 6);
-    assertEquals(run(Message().Encrypted([0, 1, 2, 3, 0])), 3);
+    assertEquals(run(Message.Quit(null)), -1);
+    assertEquals(run(Message.Plaintext("Hello!")), 6);
+    assertEquals(run(Message.Encrypted([0, 1, 2, 3, 0])), 3);
 
     run = (msg: Message) =>
       Enum.match(msg, {
@@ -117,23 +110,23 @@ Deno.test({
 
     assertEquals(run({} as any), -1);
     assertEquals(run({ Invalid: null } as any), -1);
-    assertEquals(run(Message().Quit(null)), -1);
-    assertEquals(run(Message().Plaintext("Hello!")), 6);
-    assertEquals(run(Message().Encrypted([0, 1, 2, 3, 0])), -1);
+    assertEquals(run(Message.Quit(null)), -1);
+    assertEquals(run(Message.Plaintext("Hello!")), 6);
+    assertEquals(run(Message.Encrypted([0, 1, 2, 3, 0])), -1);
   },
 });
 
 Deno.test({
   name: "Enum.mutate() should be able to change variant",
   fn() {
-    let msg = Message().Plaintext("Hello!") as Mut<Message>;
-    assertEquals(msg, Message().Plaintext("Hello!"));
+    let msg = Message.Plaintext("Hello!") as Mut<Message>;
+    assertEquals(msg, Message.Plaintext("Hello!"));
 
-    let other = Message().Encrypted([5, 4, 3]);
+    let other = Message.Encrypted([5, 4, 3]);
     Enum.mutate(msg, other);
 
-    assertEquals(msg, Message().Encrypted([5, 4, 3]));
-    assertEquals(other, Message().Encrypted([5, 4, 3]));
+    assertEquals(msg, Message.Encrypted([5, 4, 3]));
+    assertEquals(other, Message.Encrypted([5, 4, 3]));
     assertEquals(msg.Encrypted, other.Encrypted);
   },
 });

@@ -27,13 +27,7 @@ class MessageImpl<T> extends EnumImpl<{
 
 type Message<T> = EnumClass<MessageImpl<T>>;
 
-const Message = memo(<T>() =>
-  Enum.factory<Message<T>>({
-    Quit: undefined,
-    Plaintext: undefined,
-    Encrypted: undefined,
-  }, MessageImpl)
-);
+const Message = memo(<T>() => Enum.proxyFactory<Message<T>>(MessageImpl));
 
 Deno.test({
   name: "EnumClass should be an Enum",

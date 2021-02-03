@@ -120,6 +120,29 @@ function createEnumFactory<E extends Enum<EnumDefinition>>(
 
 Enum.factory = createEnumFactory;
 
+function createEnumProxyFactory<
+  E extends Enum<EnumDefinition>,
+>(): EnumFactory<
+  Enum<DefinitionFromEnum<E>>
+>;
+function createEnumProxyFactory<
+  I extends Enum<EnumDefinition> & EnumImpl<EnumDefinition>,
+>(
+  Impl: new (value: EnumClassValue<I>) => EnumImpl<EnumDefinition>,
+): EnumFactory<I>;
+function createEnumProxyFactory(
+  Impl?: new (value: unknown) => unknown,
+) {
+  return new Proxy({}, {
+    get(target, prop) {
+      return (data: unknown) =>
+        Impl == null ? ({ [prop]: data }) : new Impl({ [prop]: data });
+    },
+  });
+}
+
+Enum.proxyFactory = createEnumProxyFactory;
+
 /**
  * Inspects the given enum `value` and executes code based on which variant
  * matches `value`.

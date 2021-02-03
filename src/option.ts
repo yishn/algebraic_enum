@@ -331,12 +331,12 @@ export const Option = Object.assign(
   ),
   {
     /**
-   * Creates an `Option` based on `value`. If `value` is `null` or `undefined`,
-   * this will return a `None` variant, otherwise the given `value` is attached
-   * to a `Some` variant.
-   *
-   * @param value
-   */
+     * Creates an `Option` based on `value`. If `value` is `null` or `undefined`,
+     * this will return a `None` variant, otherwise the given `value` is attached
+     * to a `Some` variant.
+     *
+     * @param value
+     */
     from<T>(value: T | null | undefined): Option<NonNullable<T>> {
       return value == null
         ? Option<NonNullable<T>>().None(null)

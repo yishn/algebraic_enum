@@ -208,8 +208,8 @@ First, you need to define your enum methods separately, extending from the
 abstract class `EnumImpl` along with your enum variants definition object. Your
 actual type can be defined using the `EnumClass` helper type.
 
-Make sure your method and property names on your `EnumImpl` class does not
-collide with your variant names.
+Make sure your method and property names on your `EnumImpl` class do not collide
+with your variant names.
 
 ```ts
 import {
