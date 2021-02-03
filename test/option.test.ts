@@ -4,11 +4,11 @@ import { assert, assertEquals, expectType, TypeEqual } from "../dev_deps.ts";
 Deno.test({
   name: "Construct Option classes",
   fn() {
-    let option = Option.Some(5);
+    let option = Option<number>().Some(5);
     expectType<TypeEqual<Option<number>, typeof option>>(true);
     assertEquals(option, { Some: 5 });
 
-    let option2 = Option.None();
+    let option2 = Option().None(null);
     expectType<TypeEqual<Option<never>, typeof option2>>(true);
     assertEquals(option2, { None: null });
 
@@ -29,10 +29,10 @@ Deno.test({
 Deno.test({
   name: "Option should be iterable",
   fn() {
-    let option = Option.Some(5);
+    let option = Option<number>().Some(5);
     assertEquals([...option], [5]);
 
-    let option2 = Option.None();
+    let option2 = Option().None(null);
     assertEquals([...option2], []);
   },
 });
@@ -40,14 +40,14 @@ Deno.test({
 Deno.test({
   name: "Option#clone()",
   fn() {
-    let option = Option.Some("blah");
+    let option = Option<string>().Some("blah");
     let cloned = option.clone();
 
     assertEquals(option.Some, cloned.Some);
     assertEquals(option.None, cloned.None);
     assert(option !== cloned, "should not be the same reference");
 
-    let option2 = Option.None();
+    let option2 = Option().None(null);
     let cloned2 = option2.clone();
 
     assertEquals(option2.Some, cloned2.Some);

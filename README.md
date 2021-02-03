@@ -44,9 +44,11 @@ type Status = Enum<{
 }>;
 
 let status: Status = { Success: null };
-
 // Or equivalently:
 let status = Enum<Status>({ Success: null });
+
+let invalidStatus: Status = { Success: null, Failure: null };
+// Compilation error, as `Enum` can only contain exactly one variant
 ```
 
 In this case, `null` denotes the absence of any data on the variants. If you do

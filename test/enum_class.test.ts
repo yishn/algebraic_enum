@@ -3,6 +3,7 @@ import { Enum, Mut } from "../src/mod.ts";
 import { EnumClass, EnumClassValue, EnumImpl } from "../src/enum_class.ts";
 import { assert, assertEquals, delay, expectType } from "../dev_deps.ts";
 import { TypeOf } from "./utils.ts";
+import { memo } from "../src/utils.ts";
 
 class MessageImpl<T> extends EnumImpl<{
   Quit: null;
@@ -17,7 +18,7 @@ class MessageImpl<T> extends EnumImpl<{
     Enum.match(this, {
       Plaintext: (data) => {
         expectType<NoUndefined<T>>(data);
-        Enum.mutate(this, { Encrypted: [1, 2, 3] });
+        Enum.mutate(this, Message<T>().Encrypted([1, 2, 3]));
       },
       _: () => {},
     });
@@ -25,13 +26,19 @@ class MessageImpl<T> extends EnumImpl<{
 }
 
 type Message<T> = EnumClass<MessageImpl<T>>;
-const Message = <T>(value: EnumClassValue<MessageImpl<T>>) =>
-  Enum<Message<T>>(value, MessageImpl);
+
+const Message = memo(<T>() =>
+  Enum.factory<Message<T>>({
+    Quit: undefined,
+    Plaintext: undefined,
+    Encrypted: undefined,
+  }, MessageImpl)
+);
 
 Deno.test({
   name: "EnumClass should be an Enum",
   fn() {
-    let msg = Message<string>({ Quit: null });
+    let msg = Message<string>().Quit(null);
     type PureEnum = EnumClassValue<MessageImpl<string>>;
 
     expectType<PureEnum>(msg);
@@ -43,7 +50,7 @@ Deno.test({
 Deno.test({
   name: "EnumClass should be filled with methods",
   async fn() {
-    let msg = Message({ Plaintext: "Hello" });
+    let msg = Message<string>().Plaintext("Hello");
     await msg.send();
   },
 });
@@ -51,7 +58,7 @@ Deno.test({
 Deno.test({
   name: "EnumClass should interact well with Enum.match() and Enum.mutate()",
   async fn() {
-    let msg = Message({ Plaintext: "Hello" }) as Mut<Message<string>>;
+    let msg = Message<string>().Plaintext("Hello") as Mut<Message<string>>;
     msg.encrypt();
 
     assert(
@@ -62,7 +69,7 @@ Deno.test({
       "msg is Encrypted",
     );
 
-    msg = Message({ Quit: null }) as Mut<Message<string>>;
+    msg = Message<string>().Quit(null) as Mut<Message<string>>;
     msg.encrypt();
 
     assert(

@@ -1,6 +1,7 @@
 import { Enum, NoUndefined } from "./enum.ts";
 import { EnumClass, EnumImpl } from "./enum_class.ts";
 import { Option } from "./option.ts";
+import { memo } from "./utils.ts";
 
 class ResultImpl<T, E extends Error> extends EnumImpl<{
   Ok: T;
@@ -15,8 +16,8 @@ class ResultImpl<T, E extends Error> extends EnumImpl<{
    */
   clone(this: Result<T, E>): Result<T, E> {
     return Enum.match(this, {
-      Ok: (data) => Result.Ok(data),
-      Err: (err) => Result.Err(err),
+      Ok: (data) => Result<T, E>().Ok(data),
+      Err: (err) => Result<T, E>().Err(err),
     });
   }
 
@@ -43,7 +44,7 @@ class ResultImpl<T, E extends Error> extends EnumImpl<{
   ok(this: Result<T, E>): Option<T> {
     return Enum.match(this, {
       Ok: (data) => Option.from(data),
-      Err: () => Option.None(),
+      Err: () => Option().None(null),
     });
   }
 
@@ -52,7 +53,7 @@ class ResultImpl<T, E extends Error> extends EnumImpl<{
    */
   err(this: Result<T, E>): Option<E> {
     return Enum.match(this, {
-      Ok: () => Option.None(),
+      Ok: () => Option().None(null),
       Err: (data) => Option.from(data),
     });
   }
@@ -111,7 +112,7 @@ class ResultImpl<T, E extends Error> extends EnumImpl<{
   and<U>(this: Result<T, E>, other: Result<U, E>): Result<U, E> {
     return Enum.match(this, {
       Ok: () => other,
-      Err: (err) => Result.Err(err),
+      Err: (err) => Result<U, E>().Err(err),
     });
   }
 
@@ -123,7 +124,7 @@ class ResultImpl<T, E extends Error> extends EnumImpl<{
   andThen<U>(this: Result<T, E>, f: (data: T) => Result<U, E>): Result<U, E> {
     return Enum.match(this, {
       Ok: f,
-      Err: (err) => Result.Err(err),
+      Err: (err) => Result<U, E>().Err(err),
     });
   }
 
@@ -149,7 +150,7 @@ class ResultImpl<T, E extends Error> extends EnumImpl<{
   ): Result<T, F> {
     return Enum.match(this, {
       Err: f,
-      Ok: (data) => Result.Ok(data),
+      Ok: (data) => Result<T, F>().Ok(data),
     });
   }
 
@@ -160,8 +161,8 @@ class ResultImpl<T, E extends Error> extends EnumImpl<{
     this: Result<Option<U>, E>,
   ): Option<Result<U, E>> {
     return Enum.match(this, {
-      Err: (err) => Option.Some(Result.Err(err)),
-      Ok: (option) => option.map((data) => Result.Ok(data)),
+      Err: (err) => Option<Result<U, E>>().Some(Result<U, E>().Err(err)),
+      Ok: (option) => option.map((data) => Result<U, E>().Ok(data)),
     });
   }
 
@@ -176,8 +177,8 @@ class ResultImpl<T, E extends Error> extends EnumImpl<{
     f: (data: NoUndefined<T>) => NoUndefined<U>,
   ): Result<U, E> {
     return Enum.match(this, {
-      Ok: (data) => Result.Ok(f(data)),
-      Err: (err) => Result.Err(err),
+      Ok: (data) => Result<U, E>().Ok(f(data)),
+      Err: (err) => Result<U, E>().Err(err),
     });
   }
 
@@ -187,10 +188,13 @@ class ResultImpl<T, E extends Error> extends EnumImpl<{
    *
    * @param f
    */
-  mapErr<F extends Error>(this: Result<T, E>, f: (err: E) => F): Result<T, F> {
+  mapErr<F extends Error>(
+    this: Result<T, E>,
+    f: (err: NoUndefined<E>) => NoUndefined<F>,
+  ): Result<T, F> {
     return Enum.match(this, {
-      Ok: (data) => Result.Ok(data),
-      Err: (err) => Result.Err(f(err)),
+      Ok: (data) => Result<T, F>().Ok(data),
+      Err: (err) => Result<T, F>().Err(f(err)),
     });
   }
 
@@ -229,7 +233,7 @@ class ResultImpl<T, E extends Error> extends EnumImpl<{
    */
   flatten<U>(this: Result<Result<U, E>, E>): Result<U, E> {
     return Enum.match(this, {
-      Err: (err) => Result.Err(err),
+      Err: (err) => Result<U, E>().Err(err),
       Ok: (result) => result,
     });
   }
@@ -240,8 +244,8 @@ class ResultImpl<T, E extends Error> extends EnumImpl<{
  * (`Err` variant).
  *
  * ```ts
- * let a: Result<number, Error> = Result.Ok(5);
- * let b: Result<unknown, Error> = Result.Err(new Error("Failed!"));
+ * let a = Result<number, Error>().Ok(5);
+ * let b = Result<unknown, Error>().Err(new Error("Failed!"));
  * ```
  *
  * @template T Type of the data that the `Ok` variant contains
@@ -249,21 +253,9 @@ class ResultImpl<T, E extends Error> extends EnumImpl<{
  */
 export type Result<T, E extends Error> = EnumClass<ResultImpl<T, E>>;
 
-export const Result = {
-  /**
-   * Creates a `Result` enum that represents success with the given data.
-   *
-   * @param data
-   */
-  Ok<T, E extends Error = never>(data: NoUndefined<T>): Result<T, E> {
-    return Enum<Result<T, E>>({ Ok: data }, ResultImpl);
-  },
-
-  /**
-   * Creates a `Result` enum which represents failure with the given error.
-   * @param err The error value
-   */
-  Err<T, E extends Error>(err: E): Result<T, E> {
-    return Enum<Result<T, E>>({ Err: err as NoUndefined<E> }, ResultImpl);
-  },
-};
+export const Result = memo(<T, E extends Error = Error>() =>
+  Enum.factory<Result<T, E>>({
+    Err: undefined,
+    Ok: undefined,
+  }, ResultImpl)
+);

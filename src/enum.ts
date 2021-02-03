@@ -17,6 +17,16 @@ export type EnumVariantData<
   V extends EnumVariants<D>,
 > = NoUndefined<D[V]>;
 
+export type EnumFactoryDefaults<E extends Enum<EnumDefinition>> = {
+  [V in EnumVariants<DefinitionFromEnum<E>>]: undefined;
+};
+
+export type EnumFactory<E extends Enum<EnumDefinition>> = {
+  [V in EnumVariants<DefinitionFromEnum<E>>]: (
+    data: EnumVariantData<DefinitionFromEnum<E>, V>,
+  ) => E;
+};
+
 export type ExhaustiveMatcher<D extends EnumDefinition, T> = {
   [V in EnumVariants<D>]: (data: EnumVariantData<D, V>) => T;
 };
@@ -65,7 +75,9 @@ export type Enum<D extends EnumDefinition> =
     readonly [mutableTag]?: unknown;
   };
 
-export function Enum<E extends Enum<EnumDefinition>>(value: E): E;
+export function Enum<E extends Enum<EnumDefinition>>(
+  value: E,
+): Enum<DefinitionFromEnum<E>>;
 export function Enum<I extends Enum<EnumDefinition> & EnumImpl<EnumDefinition>>(
   value: EnumClassValue<I>,
   Impl: new (value: EnumClassValue<I>) => EnumImpl<EnumDefinition>,
@@ -76,6 +88,37 @@ export function Enum(
 ): unknown {
   return Impl == null ? value : new Impl(value);
 }
+
+function createEnumFactory<E extends Enum<EnumDefinition>>(
+  variants: EnumFactoryDefaults<E>,
+): EnumFactory<Enum<DefinitionFromEnum<E>>>;
+function createEnumFactory<
+  I extends Enum<EnumDefinition> & EnumImpl<EnumDefinition>,
+>(
+  variants: EnumFactoryDefaults<I>,
+  Impl: new (value: EnumClassValue<I>) => EnumImpl<EnumDefinition>,
+): EnumFactory<I>;
+function createEnumFactory<E extends Enum<EnumDefinition>>(
+  variants: EnumFactoryDefaults<E>,
+  Impl?: new (value: unknown) => unknown,
+) {
+  let result = {} as Record<
+    EnumVariants<DefinitionFromEnum<E>>,
+    any
+  >;
+
+  for (let key in variants) {
+    let variant = key as EnumVariants<DefinitionFromEnum<E>>;
+
+    result[variant] = Impl == null
+      ? (data: unknown = null) => ({ [variant]: data })
+      : (data: unknown = null) => new Impl({ [variant]: data });
+  }
+
+  return result;
+}
+
+Enum.factory = createEnumFactory;
 
 /**
  * Inspects the given enum `value` and executes code based on which variant

@@ -1,6 +1,7 @@
 import { Enum, Mut, NoUndefined } from "./enum.ts";
 import { EnumClass, EnumImpl } from "./enum_class.ts";
 import { Result } from "./result.ts";
+import { memo } from "./utils.ts";
 
 class OptionImpl<T> extends EnumImpl<{
   None: null;
@@ -15,8 +16,8 @@ class OptionImpl<T> extends EnumImpl<{
    */
   clone(this: Option<T>): Option<T> {
     return Enum.match(this, {
-      Some: (data) => Option.Some(data),
-      None: () => Option.None(),
+      Some: (data) => Option<T>().Some(data),
+      None: () => Option().None(null),
     });
   }
 
@@ -54,7 +55,7 @@ class OptionImpl<T> extends EnumImpl<{
    */
   andThen<U>(this: Option<T>, f: (data: T) => Option<U>): Option<U> {
     return Enum.match(this, {
-      None: () => Option.None(),
+      None: () => Option().None(null),
       Some: f,
     });
   }
@@ -89,7 +90,7 @@ class OptionImpl<T> extends EnumImpl<{
    */
   xor(this: Option<T>, other: Option<T>): Option<T> {
     return Enum.match(this, {
-      Some: () => other.isNone() ? this : Option.None(),
+      Some: () => other.isNone() ? this : Option().None(null),
       None: () => other,
     });
   }
@@ -132,7 +133,7 @@ class OptionImpl<T> extends EnumImpl<{
    *
    * @param err
    */
-  okOr<E extends Error>(this: Option<T>, err: E): Result<T, E> {
+  okOr<E extends Error>(this: Option<T>, err: NoUndefined<E>): Result<T, E> {
     return this.okOrElse(() => err);
   }
 
@@ -141,10 +142,13 @@ class OptionImpl<T> extends EnumImpl<{
    *
    * @param err
    */
-  okOrElse<E extends Error>(this: Option<T>, err: () => E): Result<T, E> {
+  okOrElse<E extends Error>(
+    this: Option<T>,
+    err: () => NoUndefined<E>,
+  ): Result<T, E> {
     return Enum.match(this, {
-      Some: (data) => Result.Ok(data),
-      None: () => Result.Err(err()),
+      Some: (data) => Result<T, E>().Ok(data),
+      None: () => Result<T, E>().Err(err()),
     });
   }
 
@@ -160,7 +164,7 @@ class OptionImpl<T> extends EnumImpl<{
   filter(this: Option<T>, predicate: (data: T) => boolean): Option<T> {
     return Enum.match(this, {
       None: () => this,
-      Some: (data) => predicate(data) ? this : Option.None(),
+      Some: (data) => predicate(data) ? this : Option().None(null),
     });
   }
 
@@ -175,8 +179,8 @@ class OptionImpl<T> extends EnumImpl<{
     f: (data: NoUndefined<T>) => NoUndefined<U>,
   ): Option<U> {
     return Enum.match(this, {
-      None: () => Option.None(),
-      Some: (data) => Option.Some(f(data)),
+      None: () => Option().None(null),
+      Some: (data) => Option<U>().Some(f(data)),
     });
   }
 
@@ -215,7 +219,7 @@ class OptionImpl<T> extends EnumImpl<{
    */
   flatten<U>(this: Option<Option<U>>): Option<U> {
     return Enum.match(this, {
-      None: () => Option.None(),
+      None: () => Option().None(null),
       Some: (option) => option,
     });
   }
@@ -230,11 +234,11 @@ class OptionImpl<T> extends EnumImpl<{
    */
   zip<U>(this: Option<T>, other: Option<U>): Option<[T, U]> {
     return Enum.match(this, {
-      None: () => Option.None(),
+      None: () => Option().None(null),
       Some: (x) =>
         Enum.match(other, {
-          None: () => Option.None(),
-          Some: (y) => Option.Some([x, y] as [T, U]),
+          None: () => Option().None(null),
+          Some: (y) => Option<[T, U]>().Some([x, y]),
         }),
     });
   }
@@ -246,8 +250,8 @@ class OptionImpl<T> extends EnumImpl<{
     this: Option<Result<U, E>>,
   ): Result<Option<U>, E> {
     return Enum.match(this, {
-      None: () => Result.Ok(Option.None()),
-      Some: (result) => result.map((data) => Option.Some(data)),
+      None: () => Result<Option<U>, E>().Ok(Option().None(null)),
+      Some: (result) => result.map((data) => Option<U>().Some(data)),
     });
   }
 
@@ -271,7 +275,7 @@ class OptionImpl<T> extends EnumImpl<{
     return Enum.match(this, {
       None: () => {
         let data = f();
-        Enum.mutate(this, Option.Some(data));
+        Enum.mutate(this, Option<T>().Some(data));
         return data;
       },
       Some: (data) => data,
@@ -283,10 +287,10 @@ class OptionImpl<T> extends EnumImpl<{
    */
   take(this: Mut<Option<T>>): Option<T> {
     return Enum.match(this, {
-      None: () => Option.None(),
+      None: () => Option().None(null),
       Some: (data) => {
-        Enum.mutate(this, Option.None());
-        return Option.Some(data);
+        Enum.mutate(this, Option().None(null));
+        return Option<T>().Some(data);
       },
     });
   }
@@ -299,7 +303,7 @@ class OptionImpl<T> extends EnumImpl<{
    */
   replace(this: Mut<Option<T>>, data: NoUndefined<T>): Option<T> {
     let oldOption = this.clone();
-    Enum.mutate(this, Option.Some(data));
+    Enum.mutate(this, Option<T>().Some(data));
     return oldOption;
   }
 }
@@ -309,8 +313,8 @@ class OptionImpl<T> extends EnumImpl<{
  * `Some`, which contains data, and `None`, which does not.
  *
  * ```ts
- * let a: Option<number> = Option.Some(5);
- * let b: Option<never> = Option.None();
+ * let a: Option<number> = Option<number>().Some(5);
+ * let b: Option<never> = Option().None(null);
  * let c: Option<string> = Option.from("Hello")
  * ```
  *
@@ -318,33 +322,25 @@ class OptionImpl<T> extends EnumImpl<{
  */
 export type Option<T> = EnumClass<OptionImpl<T>>;
 
-export const Option = {
-  /**
-   * Creates an `Option` which contains data.
-   *
-   * @param data
-   */
-  Some<T>(data: NoUndefined<T>): Option<T> {
-    return Enum<Option<T>>({ Some: data }, OptionImpl);
-  },
-
-  /**
-   * Creates an `Option` which contains no data.
-   */
-  None<T = never>(): Option<T> {
-    return Enum<Option<T>>({ None: null }, OptionImpl);
-  },
-
-  /**
+export const Option = Object.assign(
+  memo(<T = never>() =>
+    Enum.factory<Option<T>>({
+      Some: undefined,
+      None: undefined,
+    }, OptionImpl)
+  ),
+  {
+    /**
    * Creates an `Option` based on `value`. If `value` is `null` or `undefined`,
    * this will return a `None` variant, otherwise the given `value` is attached
    * to a `Some` variant.
    *
    * @param value
    */
-  from<T>(value: T | null | undefined): Option<NonNullable<T>> {
-    return value == null
-      ? Option.None()
-      : Option.Some<NonNullable<T>>(value as NoUndefined<NonNullable<T>>);
+    from<T>(value: T | null | undefined): Option<NonNullable<T>> {
+      return value == null
+        ? Option<NonNullable<T>>().None(null)
+        : Option<NonNullable<T>>().Some(value as NoUndefined<NonNullable<T>>);
+    },
   },
-};
+);
