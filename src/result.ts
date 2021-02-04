@@ -1,12 +1,16 @@
 import { Enum, NoUndefined } from "./enum.ts";
 import { EnumClass, EnumImpl } from "./enum_class.ts";
 import { Option } from "./option.ts";
-import { memo } from "./utils.ts";
+import { memo, ofType } from "./utils.ts";
 
-class ResultImpl<T, E extends Error> extends EnumImpl<{
-  Ok: T;
-  Err: E;
-}> {
+const ResultVariants = {
+  Ok: ofType<unknown>(),
+  Err: ofType<unknown>(),
+};
+
+class ResultImpl<T, E extends Error> extends EnumImpl<
+  typeof ResultVariants & { Ok: T; Err: E }
+> {
   *[Symbol.iterator](this: Result<T, E>): Iterator<T> {
     if (this.isOk()) yield this.unwrap();
   }
@@ -254,8 +258,5 @@ class ResultImpl<T, E extends Error> extends EnumImpl<{
 export type Result<T, E extends Error> = EnumClass<ResultImpl<T, E>>;
 
 export const Result = memo(<T, E extends Error = Error>() =>
-  Enum.factory<Result<T, E>>({
-    Err: undefined,
-    Ok: undefined,
-  }, ResultImpl)
+  Enum.factory<Result<T, E>>(ResultVariants, ResultImpl)
 );

@@ -7,37 +7,30 @@ export type NoUndefined<T> = Exclude<T, undefined | void>;
 
 export type EnumDefinition = Record<string, any> & { _?: never };
 
-export type DefinitionFromEnum<E extends Enum<EnumDefinition>> = E extends
-  Enum<infer D> ? D : never;
+export type DefinitionFromEnum<E extends Enum<EnumDefinition>> = NoUndefined<
+  E[typeof definitionTag]
+>;
 
-export type EnumVariants<D extends EnumDefinition> = Exclude<keyof D, "_">;
-
-export type EnumVariantData<
-  D extends EnumDefinition,
-  V extends EnumVariants<D>,
-> = NoUndefined<D[V]>;
-
-export type EnumFactoryDefaults<E extends Enum<EnumDefinition>> = {
-  [V in EnumVariants<DefinitionFromEnum<E>>]: undefined;
-};
+export type EnumVariant<
+  E extends Enum<EnumDefinition>,
+  V extends keyof DefinitionFromEnum<E>,
+> = NoUndefined<DefinitionFromEnum<E>[V]>;
 
 export type EnumFactory<E extends Enum<EnumDefinition>> = {
-  [V in EnumVariants<DefinitionFromEnum<E>>]: (
-    data: EnumVariantData<DefinitionFromEnum<E>, V>,
-  ) => E;
+  [V in keyof DefinitionFromEnum<E>]: (data: EnumVariant<E, V>) => E;
 };
 
-export type ExhaustiveMatcher<D extends EnumDefinition, T> = {
-  [V in EnumVariants<D>]: (data: EnumVariantData<D, V>) => T;
+export type ExhaustiveMatcher<E extends Enum<EnumDefinition>, T> = {
+  [V in keyof DefinitionFromEnum<E>]: (data: EnumVariant<E, V>) => T;
 };
 
-export type WildcardMatcher<D extends EnumDefinition, T> =
-  & Partial<ExhaustiveMatcher<D, T>>
+export type WildcardMatcher<E extends Enum<EnumDefinition>, T> =
+  & Partial<ExhaustiveMatcher<E, T>>
   & { _: () => T };
 
-export type Matcher<D extends EnumDefinition, T> =
-  | ExhaustiveMatcher<D, T>
-  | WildcardMatcher<D, T>;
+export type Matcher<E extends Enum<EnumDefinition>, T> =
+  | ExhaustiveMatcher<E, T>
+  | WildcardMatcher<E, T>;
 
 /**
  * Marks an enum type as mutable, so it can be mutated by `Enum.mutate`.
@@ -45,53 +38,67 @@ export type Matcher<D extends EnumDefinition, T> =
 export type Mut<E extends Enum<EnumDefinition>> = E & { [mutableTag]?: true };
 
 /**
- * Create an enum type by defining all your variants in the generic `D`. The
- * data type contained in the variants cannot be `undefined`. The variant name
- * cannot be `_`, as it is reserved.
+ * Create an enum type by defining all your variants in a separate object with
+ * the `ofType<T>()` helper function. The data type contained in the variants
+ * cannot be `undefined`. The variant name cannot be `_` as it is reserved.
+ *
+ * Then use the helper type `Enum` to create your enum type. To construct enums
+ * easier, you can use `Enum.factory()`.
  *
  * ```ts
- * type Message = Enum<{
+ * const MessageVariants = {
  *   Quit: null,
- *   Plaintext: string,
- *   Encrypted: number[]
- * }>;
+ *   Plaintext: ofType<string>(),
+ *   Encrypted: ofType<number[]>(),
+ * };
  *
- * let msg: Message = { Encrypted: [4, 8, 15, 16, 23, 42] };
+ * type Message = Enum<typeof MessageVariants>;
  * ```
  *
- * @template D Definitions of all variants of the enum
+ * It's also possible to create generic enum types. Mark any generic variants as
+ * type `unknown` in your variants object and supply the generic type in the
+ * type definition itself:
+ *
+ * ```ts
+ * const MessageVariants = {
+ *   Quit: null,
+ *   Plaintext: ofType<unknown>(),
+ *   Encrypted: ofType<number[]>(),
+ * };
+ *
+ * type Message<T> = Enum<typeof MessageVariants & { Plaintext: T }>;
+ * ```
+ *
+ * @template D Definition of all variants of the enum
  */
 export type Enum<D extends EnumDefinition> =
   & {
-    [V in EnumVariants<D>]:
-      & { readonly [_ in Exclude<EnumVariants<D>, V>]?: never }
-      & { readonly [_ in V]-?: EnumVariantData<D, V> };
-  }[EnumVariants<D>]
+    [V in Exclude<keyof D, "_">]:
+      & { readonly [_ in Exclude<keyof D, V>]?: never }
+      & { readonly [_ in V]: NoUndefined<D[V]> };
+  }[Exclude<keyof D, "_">]
   & {
     readonly [definitionTag]?: D;
     readonly [mutableTag]?: unknown;
   };
 
 function createEnumFactory<E extends Enum<EnumDefinition>>(
-  variants: EnumFactoryDefaults<E>,
+  variants: Record<keyof DefinitionFromEnum<E>, unknown>,
 ): EnumFactory<Enum<DefinitionFromEnum<E>>>;
 function createEnumFactory<
   I extends Enum<EnumDefinition> & EnumImpl<EnumDefinition>,
 >(
-  variants: EnumFactoryDefaults<I>,
+  variants: Record<keyof DefinitionFromEnum<I>, unknown>,
   Impl: new (value: EnumClassValue<I>) => EnumImpl<EnumDefinition>,
 ): EnumFactory<I>;
 function createEnumFactory<E extends Enum<EnumDefinition>>(
-  variants: EnumFactoryDefaults<E>,
+  variants: Record<keyof DefinitionFromEnum<E>, unknown>,
   Impl?: new (value: unknown) => unknown,
 ) {
-  let result = {} as Record<
-    EnumVariants<DefinitionFromEnum<E>>,
-    any
-  >;
+  let result = {} as Record<keyof DefinitionFromEnum<E>, any>;
 
   for (let key in variants) {
-    let variant = key as EnumVariants<DefinitionFromEnum<E>>;
+    let variant = key as keyof DefinitionFromEnum<E>;
 
     result[variant] = Impl == null
       ? (data: unknown = null) => ({ [variant]: data })
@@ -101,42 +108,57 @@ function createEnumFactory<E extends Enum<EnumDefinition>>(
   return result;
 }
 
-function createEnumProxyFactory<
-  E extends Enum<EnumDefinition>,
->(): EnumFactory<
-  Enum<DefinitionFromEnum<E>>
->;
-function createEnumProxyFactory<
-  I extends Enum<EnumDefinition> & EnumImpl<EnumDefinition>,
->(
-  Impl: new (value: EnumClassValue<I>) => EnumImpl<EnumDefinition>,
-): EnumFactory<I>;
-function createEnumProxyFactory(
-  Impl?: new (value: unknown) => unknown,
-) {
-  return new Proxy({}, {
-    get(target, prop) {
-      return (data: unknown) =>
-        Impl == null ? ({ [prop]: data }) : new Impl({ [prop]: data });
-    },
-  });
-}
-
 export const Enum = {
+  /**
+   * Creates easier constructors for the given enum type.
+   *
+   * ```ts
+   * const MessageVariants = {
+   *   Quit: null,
+   *   Plaintext: ofType<string>(),
+   *   Encrypted: ofType<number[]>(),
+   * };
+   *
+   * type Message = Enum<typeof MessageVariants>;
+   * const Message = Enum.factory<Message>(MessageVariants);
+   *
+   * let plain = Message.Plaintext("Hello World!");
+   * let quit = Message.Quit(null);
+   * ```
+   *
+   * For generic enum types, you might want to use an additional function to
+   * provide the generic type. To avoid recreating the enum factory, use the
+   * `memo` helper function.
+   *
+   * ```ts
+   * const MessageVariants = {
+   *   Quit: null,
+   *   Plaintext: ofType<unknown>(),
+   *   Encrypted: ofType<number[]>(),
+   * };
+   *
+   * type Message<T> = Enum<typeof MessageVariants & { Plaintext: T }>;
+   * const Message = memo(<T>() => Enum.factory<Message<T>>(MessageVariants));
+   *
+   * let plain = Message<string>().Plaintext("Hello World!");
+   * let quit = Message().Quit(null);
+   * ```
+   */
   factory: createEnumFactory,
-
-  proxyFactory: createEnumProxyFactory,
 
   /**
    * Inspects the given enum `value` and executes code based on which variant
    * matches `value`.
    *
    * ```ts
-   * type Message = Enum<{
+   * const MessageVariants = {
    *   Quit: null,
-   *   Plaintext: string,
-   *   Encrypted: number[]
-   * }>;
+   *   Plaintext: ofType<string>(),
+   *   Encrypted: ofType<number[]>(),
+   * };
+   *
+   * type Message = Enum<typeof MessageVariants>;
+   * const Message = Enum.factory<Message>(MessageVariants);
    *
    * let msg: Message = getMessage();
    *
@@ -175,23 +197,23 @@ export const Enum = {
    * @param value The enum value to match against
    * @param matcher
    */
-  match: <D extends EnumDefinition, T>(
-    value: Enum<D>,
-    matcher: Matcher<D, T>,
+  match: <E extends Enum<EnumDefinition>, T>(
+    value: E,
+    matcher: Matcher<E, T>,
   ): T => {
-    let variant: EnumVariants<D> | "_" = "_";
+    let variant: keyof DefinitionFromEnum<E> | "_" = "_";
 
     for (let key in value) {
       if (value[key] !== undefined && matcher[key] !== undefined) {
-        variant = key as EnumVariants<D>;
+        variant = key as keyof DefinitionFromEnum<E>;
         break;
       }
     }
 
     if (variant !== "_") {
-      return matcher[variant]!(value[variant]!);
+      return matcher[variant]!(value[variant as keyof E]);
     } else if ("_" in matcher && matcher._ !== undefined) {
-      return (matcher as WildcardMatcher<D, T>)._();
+      return (matcher as WildcardMatcher<E, T>)._();
     }
 
     throw new Error(
@@ -205,16 +227,19 @@ export const Enum = {
    * Requirement: The enum type has to be marked as mutable with `Mut`.
    *
    * ```ts
-   * type E = Enum<{
-   *   A: number,
-   *   B: string
-   * }>;
+   * const EVariants = {
+   *   A: ofType<number>(),
+   *   B: ofType<string>(),
+   * };
    *
-   * const a: E = { A: 5 };
-   * Enum.mutate(a, { B: "Hello" }); // Compilation error
+   * type E = Enum<typeof EVariants>;
+   * const E = Enum.factory<E>(EVariants);
    *
-   * const b: Mut<E> = { A: 5 };
-   * Enum.mutate(b, { B: "Hello" });
+   * const a = E.A(5);
+   * Enum.mutate(a, E.B("Hello")); // Compilation error
+   *
+   * const b = E.A(5) as Mut<E>;
+   * Enum.mutate(b, E.B("Hello"));
    *
    * console.log(b);
    * // => { B: "Hello" }

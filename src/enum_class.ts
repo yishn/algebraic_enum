@@ -7,21 +7,22 @@ declare const enumType: unique symbol;
  * particular, you can define methods that act on enums.
  *
  * ```ts
- * class MessageImpl<T> extends EnumImpl<{
+ * const MessageVariants = {
  *   Quit: null,
- *   Plaintext: T,
- *   Encrypted: number[]
- * }> {
- *   async send(this: Message<T>): Promise<void> {
+ *   Plaintext: ofType<string>(),
+ *   Encrypted: ofType<number[]>(),
+ * };
+ *
+ * class MessageImpl extends EnumImpl<typeof MessageVariants> {
+ *   async send(this: Message): Promise<void> {
  *     // ...
  *   }
  * }
  *
- * type Message<T> = EnumClass<MessageImpl<T>>;
- * const Message = <T>(value: EnumClassValue<MessageImpl<T>>) =>
- *   Enum<Message<T>>(value, MessageImpl);
+ * type Message = EnumClass<MessageImpl>;
+ * const Message = Enum.factory<Message>(MessageVariants, MessageImpl);
  *
- * let msg = Message({ Plaintext: "Hello World!" });
+ * let msg = Message.Plaintext("Hello World!");
  *
  * await Enum.match(msg, {
  *   Plaintext: async () => await msg.send(),

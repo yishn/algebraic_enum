@@ -1,12 +1,14 @@
 import { Enum, Mut, NoUndefined } from "./enum.ts";
 import { EnumClass, EnumImpl } from "./enum_class.ts";
 import { Result } from "./result.ts";
-import { memo } from "./utils.ts";
+import { memo, ofType } from "./utils.ts";
 
-class OptionImpl<T> extends EnumImpl<{
-  None: null;
-  Some: T;
-}> {
+const OptionVariants = {
+  Some: ofType<unknown>(),
+  None: null,
+};
+
+class OptionImpl<T> extends EnumImpl<typeof OptionVariants & { Some: T }> {
   *[Symbol.iterator](this: Option<T>): Iterator<T> {
     if (this.isSome()) yield this.unwrap();
   }
@@ -323,12 +325,7 @@ class OptionImpl<T> extends EnumImpl<{
 export type Option<T> = EnumClass<OptionImpl<T>>;
 
 export const Option = Object.assign(
-  memo(<T = never>() =>
-    Enum.factory<Option<T>>({
-      Some: undefined,
-      None: undefined,
-    }, OptionImpl)
-  ),
+  memo(<T = never>() => Enum.factory<Option<T>>(OptionVariants, OptionImpl)),
   {
     /**
      * Creates an `Option` based on `value`. If `value` is `null` or `undefined`,

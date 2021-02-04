@@ -3,13 +3,17 @@ import { Enum, Mut } from "../src/mod.ts";
 import { EnumClass, EnumClassValue, EnumImpl } from "../src/enum_class.ts";
 import { assert, assertEquals, delay, expectType } from "../dev_deps.ts";
 import { TypeOf } from "./utils.ts";
-import { memo } from "../src/utils.ts";
+import { memo, ofType } from "../src/utils.ts";
 
-class MessageImpl<T> extends EnumImpl<{
-  Quit: null;
-  Plaintext: T;
-  Encrypted: number[];
-}> {
+const MessageVariants = {
+  Quit: null,
+  Plaintext: ofType<unknown>(),
+  Encrypted: ofType<number[]>(),
+};
+
+class MessageImpl<T> extends EnumImpl<
+  typeof MessageVariants & { Plaintext: T }
+> {
   async send(): Promise<void> {
     await delay(100);
   }
@@ -26,8 +30,9 @@ class MessageImpl<T> extends EnumImpl<{
 }
 
 type Message<T> = EnumClass<MessageImpl<T>>;
-
-const Message = memo(<T>() => Enum.proxyFactory<Message<T>>(MessageImpl));
+const Message = memo(<T>() =>
+  Enum.factory<Message<T>>(MessageVariants, MessageImpl)
+);
 
 Deno.test({
   name: "EnumClass should be an Enum",

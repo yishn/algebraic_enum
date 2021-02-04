@@ -1,15 +1,16 @@
-import { Enum, Mut } from "../src/mod.ts";
-import { DefinitionFromEnum, Matcher, NoUndefined } from "../src/enum.ts";
+import { Enum, Mut, ofType } from "../src/mod.ts";
+import { Matcher, NoUndefined } from "../src/enum.ts";
 import { assertEquals, assertThrows, expectType } from "../dev_deps.ts";
 import { TypeOf } from "./utils.ts";
 
-type Message = Enum<{
-  Quit: null;
-  Plaintext: string;
-  Encrypted: number[];
-}>;
+const EnumVariants = {
+  Quit: null,
+  Plaintext: ofType<string>(),
+  Encrypted: ofType<number[]>(),
+};
 
-const Message = Enum.proxyFactory<Message>();
+type Message = Enum<typeof EnumVariants>;
+const Message = Enum.factory<Message>(EnumVariants);
 
 Deno.test({
   name: "Enums can contain one and only one variant",
@@ -46,7 +47,7 @@ Deno.test({
 Deno.test({
   name: "Enum.match() has to be exhaustive",
   fn() {
-    type M = Matcher<DefinitionFromEnum<Message>, number>;
+    type M = Matcher<Message, number>;
 
     expectType<M>({
       Quit: () => -1,
