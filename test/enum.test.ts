@@ -15,9 +15,9 @@ const Message = Enum.factory<Message>(EnumVariants);
 Deno.test({
   name: "Enums can contain one and only one variant",
   fn() {
-    expectType<Message>(Message.Quit(null));
-    expectType<Message>(Message.Plaintext("Hello World!"));
-    expectType<Message>(Message.Encrypted([4, 8, 15, 16, 23, 42]));
+    expectType<Message>({ Quit: null });
+    expectType<Message>({ Plaintext: "Hello World!" });
+    expectType<Message>({ Encrypted: [4, 8, 15, 16, 23, 42] });
 
     expectType<TypeOf<{}, Message>>(false);
     expectType<TypeOf<{ Quit: 5 }, Message>>(false);

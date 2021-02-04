@@ -16,10 +16,10 @@ For optimal type safety, use this library in TypeScript's strict mode.
 
 ### Installation
 
-Using with Deno is as simple as adding the following export to your `deps.ts`:
+Using with Deno is as simple as adding an import to your code:
 
 ```ts
-export * from "https://deno.land/x/algebraic_enum/src/mod.ts";
+import {/* ... */} from "https://deno.land/x/algebraic_enum/src/mod.ts";
 ```
 
 For Node.js, you can install with npm:
@@ -30,33 +30,36 @@ $ npm install algebraic_enum
 
 ### Creating an Enum Type
 
-You can define an algebraic enum type by using the `Enum` helper type. Define
-and provide your variants and data types in a generic to `Enum`. Note that
-variant names cannot be `_`, as it is reserved.
+You can define an algebraic enum type by using the `Enum` helper type. First,
+define and provide your variants in a separate object. Then, you can pass the
+type of your variants object as a generic to `Enum`.
+
+Note that variant names cannot be `_` as it is reserved.
 
 ```ts
 import { Enum } from "https://deno.land/x/algebraic_enum/src/mod.ts";
 
-type Status = Enum<{
-  Success: null;
-  Failure: null;
-  Pending: null;
-}>;
+const StatusVariants = {
+  Success: null,
+  Failure: null,
+  Pending: null,
+};
+
+type Status = Enum<typeof StatusVariants>;
 
 let status: Status = { Success: null };
-// Or equivalently:
-let status = Enum<Status>({ Success: null });
 
 let invalidStatus: Status = { Success: null, Failure: null };
 // Compilation error, as `Enum` can only contain exactly one variant
 ```
 
 In this case, `null` denotes the absence of any data on the variants. If you do
-not need to attach any data to your variants, it's probably better to simply use
-the built-in `enum` construct for your enum type.
+not need to attach any data to any of your variants, it's probably better to
+simply use the built-in `enum` construct for your enum type.
 
 As you can see, enum type values are plain JavaScript objects with no baggage
-attached, which will simplify interoperability with other libraries.
+attached, meaning no extra runtime costs, and also simplified interoperability
+with other libraries.
 
 Roughly speaking, the type `Status` is like the union of its variants, ensuring
 only one variant exists. That's the main idea, however `Enum` does a few other
@@ -71,32 +74,44 @@ type Status =
   | { Pending: null };
 ```
 
-### Different Variant Data Types
-
-You can attach data of different data types to each variant of an enum. One
-restriction is that you cannot use `undefined` or `void` as your variant data
-type.
+For easier enum value construction, you can use the `Enum.factory` function:
 
 ```ts
-import { Enum } from "https://deno.land/x/algebraic_enum/src/mod.ts";
+type Status = Enum<typeof StatusVariants>;
+const Status = Enum.factory<Status>(StatusVariants);
 
-type Status = Enum<{
-  Success: string;
-  Failure: {
+let success = Status.Success(null);
+let failure = Status.Failure(null);
+let pending = Status.Pending(null);
+```
+
+### Different Variant Data Types
+
+You can attach data of different data types to each variant of an enum by using
+the `ofType` helper function. One restriction is that you cannot use `undefined`
+or `void` as your variant data type.
+
+```ts
+import { Enum, ofType } from "https://deno.land/x/algebraic_enum/src/mod.ts";
+
+const StatusVariants = {
+  Success: ofType<string>(),
+  Failure: ofType<{
     code: number;
     message: string;
-  };
-  Pending: null;
-}>;
+  }>(),
+  Pending: null,
+};
 
-let status = Enum<Status>({ Success: "Hello World!" });
-let failure = Enum<Status>({
-  Failure: {
-    code: 404,
-    message: "Not Found",
-  },
+type Status = Enum<typeof StatusVariants>;
+const Status = Enum.factory<Status>(StatusVariants);
+
+let success = Status.Success("Hello World!");
+let failure = Status.Failure({
+  code: 404,
+  message: "Not Found",
 });
-let pending = Enum<Status>({ Pending: null });
+let pending = Status.Pending(null);
 ```
 
 ### Match Data
@@ -140,28 +155,47 @@ if (status.Failure !== undefined) {
 
 ### Generic Enum Types
 
-Within the type system of TypeScript, you can easily create generic enum types:
+It is possible to create generic enum types. Since TypeScript doesn't support
+generic objects, you need to create your variants object without generics.
+Instead, mark variants with generic types as `unknown`. When constructing the
+enum type itself, you can finally override certain variant data types with the
+correct generic type.
 
 ```ts
-import { Enum } from "https://deno.land/x/algebraic_enum/src/mod.ts";
+import {
+  Enum,
+  memo,
+  ofType,
+} from "https://deno.land/x/algebraic_enum/src/mod.ts";
 
-type Status<T> = Enum<{
-  Success: T;
-  Failure: {
+const StatusVariants = {
+  Success: ofType<unknown>(),
+  Failure: ofType<{
     code: number;
     message: string;
-  };
-  Pending: null;
-}>;
+  }>(),
+  Pending: null,
+};
 
-let status = Enum<Status<string>>({ Success: "Hello World!" });
-let failure = Enum<Status<boolean>>({
-  Failure: {
-    code: 404,
-    message: "Not Found",
-  },
+// Mark `Success` variant data type as generic
+type Status<T> = Enum<typeof StatusVariants & { Success: T }>;
+```
+
+Creating an enum factory is going to be more complicated, but possible. You can
+wrap it in another function to specify the generic types. To avoid recreating
+the enum factory over and over again, it is recommended to use the `memo` helper
+function.
+
+```ts
+type Status<T> = Enum<typeof StatusVariants & { Success: T }>;
+const Status = memo(<T>() => Enum.factory<Status<T>>(StatusVariants));
+
+let success = Status<string>().Success("Hello World!");
+let failure = Status<boolean>().Failure({
+  code: 404,
+  message: "Not Found",
 });
-let pending = Enum<Status<number>>({ Pending: null });
+let pending = Status<number>().Pending(null);
 ```
 
 ### Mutate Enum Variant
@@ -176,25 +210,18 @@ With `Enum.mutate`, you can change the variant of an existing enum value itself,
 provided the variable is marked as mutable:
 
 ```ts
-import { Enum, Mut } from "https://deno.land/x/algebraic_enum/src/mod.ts";
+import { Mut } from "https://deno.land/x/algebraic_enum/src/mod.ts";
 
-type Status<T> = Enum<{
-  Success: T;
-  Failure: {
-    code: number;
-    message: string;
-  };
-  Pending: null;
-}>;
+// ...
 
-let status = Enum<Status<string>>({ Success: "Hello World!" });
+let status = Status<string>().Success("Hello World!");
 
-Enum.mutate(status, { Pending: null });
+Enum.mutate(status, Status<string>().Pending(null));
 // Compilation error, since `status` is not marked as mutable
 
-let mutableStatus = Enum<Mut<Status<string>>>({ Failure: null });
+let mutableStatus = Status<string>().Pending(null) as Mut<Status<string>>;
 
-Enum.mutate(mutableStatus, { Success: "Mutated!" });
+Enum.mutate(mutableStatus, Status<string>().Success("Mutated!"));
 // `mutableStatus` is now a `Success` variant
 ```
 
@@ -205,28 +232,31 @@ create an enum class which behaves like a normal enum and also like a class
 where you can have instance methods.
 
 First, you need to define your enum methods separately, extending from the
-abstract class `EnumImpl` along with your enum variants definition object. Your
-actual type can be defined using the `EnumClass` helper type.
+abstract class `EnumImpl` along with your enum variants object. Your actual type
+can be defined using the `EnumClass` helper type.
 
 Make sure your method and property names on your `EnumImpl` class do not collide
 with your variant names.
 
 ```ts
 import {
+  ofType,
+  memo,
   Enum,
   EnumClass,
-  EnumClassValue,
   EnumImpl,
 } from "https://deno.land/x/algebraic_enum/src/mod.ts";
 
-class StatusImpl<T> extends EnumImpl<{
-  Success: T;
-  Failure: {
+const StatusVariants = {
+  Success: ofType<unknown>(),
+  Failure: ofType<{
     code: number;
     message: string;
-  };
+  }>(),
   Pending: null;
-}> {
+}
+
+class StatusImpl<T> extends EnumImpl<typeof StatusVariants & { Success: T }> {
   // Make sure to have the correct enum class type as `this`, otherwise you
   // won't be able to treat `this` as an `Enum`.
   getMessage(this: Status<T>): string {
@@ -239,37 +269,26 @@ class StatusImpl<T> extends EnumImpl<{
 
   // Declare `this` as mutable to enable enum mutation.
   fail(this: Mut<Status<T>>, code: number, message: string): void {
-    Enum.mutate(this, { Failure: { code, message } });
+    Enum.mutate(this, Status<T>().Failure({ code, message }));
   }
 }
 
 type Status<T> = EnumClass<StatusImpl<T>>;
 ```
 
-To construct a new instance of `Status`, you use the `Enum()` helper function by
-additionally passing along the `EnumImpl` class.
+It's also possible to create an enum factory for easy object construction by
+additionally passing `StatusImpl` to `Enum.factory`.
 
 ```ts
-let status = Enum<Status<string>>({ Success: "Hello!" }, StatusImpl);
+const Status = memo(<T>() =>
+  Enum.factory<Status<T>>(StatusVariants, StatusImpl)
+);
+
+let status = Status<string>().Success("Hello!");
 let message = status.getMessage();
-message.fail(404, "Not found"); // Compilation error, since `message` is not declared as mutable
+message.fail(404, "Not found");
+// Compilation error, since `message` is not marked as mutable
 
-let mutableStatus = Enum<Mut<Status<string>>>({ Pending: null }, StatusImpl);
-mutableStatus.fail(404, "Not found");
-```
-
-It's usual to create your own constructor function to construct new instances of
-your enum class.
-
-```ts
-type Status<T> = EnumClass<StatusImpl<T>>;
-const Status = <T>(value: EnumClassValue<StatusImpl<T>>) =>
-  Enum<Status<T>>(value, StatusImpl);
-
-let status = Status<string>({ Success: "Hello!" });
-let message = status.getMessage();
-message.fail(404, "Not found"); // Compilation error, since `message` is not declared as mutable
-
-let mutableStatus = Status<string>({ Pending: null }) as Mut<Status<string>>;
+let mutableStatus = Status<string>().Pending(null) as Mut<Status<string>>;
 mutableStatus.fail(404, "Not found");
 ```

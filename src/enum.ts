@@ -1,15 +1,14 @@
 import type { EnumClassValue, EnumImpl } from "./enum_class.ts";
 
-declare const definitionTag: unique symbol;
-declare const mutableTag: unique symbol;
+declare const enumTag: unique symbol;
 
 export type NoUndefined<T> = Exclude<T, undefined | void>;
 
 export type EnumDefinition = Record<string, any> & { _?: never };
 
 export type DefinitionFromEnum<E extends Enum<EnumDefinition>> = NoUndefined<
-  E[typeof definitionTag]
->;
+  E[typeof enumTag]
+>["definition"];
 
 export type EnumVariant<
   E extends Enum<EnumDefinition>,
@@ -35,7 +34,9 @@ export type Matcher<E extends Enum<EnumDefinition>, T> =
 /**
  * Marks an enum type as mutable, so it can be mutated by `Enum.mutate`.
  */
-export type Mut<E extends Enum<EnumDefinition>> = E & { [mutableTag]?: true };
+export type Mut<E extends Enum<EnumDefinition>> = E & {
+  readonly [enumTag]?: { mutable: true };
+};
 
 /**
  * Create an enum type by defining all your variants in a separate object with
@@ -78,8 +79,10 @@ export type Enum<D extends EnumDefinition> =
       & { readonly [_ in V]: NoUndefined<D[V]> };
   }[Exclude<keyof D, "_">]
   & {
-    readonly [definitionTag]?: D;
-    readonly [mutableTag]?: unknown;
+    readonly [enumTag]?: {
+      definition: D;
+      mutable: unknown;
+    };
   };
 
 function createEnumFactory<E extends Enum<EnumDefinition>>(
@@ -205,7 +208,7 @@ export const Enum = {
 
     for (let key in value) {
       if (value[key] !== undefined && matcher[key] !== undefined) {
-        variant = key as keyof DefinitionFromEnum<E>;
+        variant = key;
         break;
       }
     }
