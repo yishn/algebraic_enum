@@ -3,4 +3,5 @@ node_modules/
 ci/
 test/
 src/
+coverage/
 *.tgz
