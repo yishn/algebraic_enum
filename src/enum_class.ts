@@ -1,6 +1,6 @@
 import type { Enum, EnumDefinition, NoUndefined } from "./enum.ts";
 
-declare const enumType: unique symbol;
+const enumType = Symbol();
 
 /**
  * With `EnumImpl`, you can write your own classes that behave like enums. In
