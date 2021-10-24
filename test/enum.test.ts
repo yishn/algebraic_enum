@@ -1,6 +1,11 @@
 import { Enum, Mut, ofType } from "../src/mod.ts";
 import { Matcher, NoUndefined } from "../src/enum.ts";
-import { assertEquals, assertThrows, expectType } from "../dev_deps.ts";
+import {
+  assertEquals,
+  assertThrows,
+  expectType,
+  TypeEqual,
+} from "../dev_deps.ts";
 import { TypeOf } from "./utils.ts";
 
 const EnumVariants = {
@@ -90,30 +95,32 @@ Deno.test({
 Deno.test({
   name: "Enum.match() should pick the right variant or wildcard",
   fn() {
-    let run = (msg: Message) =>
-      Enum.match(msg, {
+    const run = (msg: Message) =>
+      Enum.match<Message, number>(msg, {
         Quit: () => -1,
         Plaintext: (data) => data.length,
         Encrypted: (data) => data.filter((x) => x !== 0).length,
       });
 
+    expectType<TypeEqual<ReturnType<typeof run>, number>>(true);
     assertThrows(() => run({} as any));
     assertThrows(() => run({ Invalid: null } as any));
     assertEquals(run(Message.Quit(null)), -1);
     assertEquals(run(Message.Plaintext("Hello!")), 6);
     assertEquals(run(Message.Encrypted([0, 1, 2, 3, 0])), 3);
 
-    run = (msg: Message) =>
+    const run2 = (msg: Message) =>
       Enum.match(msg, {
         Plaintext: (data) => data.length,
         _: () => -1,
       });
 
-    assertEquals(run({} as any), -1);
-    assertEquals(run({ Invalid: null } as any), -1);
-    assertEquals(run(Message.Quit(null)), -1);
-    assertEquals(run(Message.Plaintext("Hello!")), 6);
-    assertEquals(run(Message.Encrypted([0, 1, 2, 3, 0])), -1);
+    expectType<TypeEqual<ReturnType<typeof run2>, number>>(true);
+    assertEquals(run2({} as any), -1);
+    assertEquals(run2({ Invalid: null } as any), -1);
+    assertEquals(run2(Message.Quit(null)), -1);
+    assertEquals(run2(Message.Plaintext("Hello!")), 6);
+    assertEquals(run2(Message.Encrypted([0, 1, 2, 3, 0])), -1);
   },
 });
 

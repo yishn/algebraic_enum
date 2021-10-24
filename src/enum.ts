@@ -10,17 +10,20 @@ export type DefinitionFromEnum<E extends Enum<EnumDefinition>> = NoUndefined<
   E[typeof enumTag]
 >["definition"];
 
-export type EnumVariant<
+export type EnumVariant<E extends Enum<EnumDefinition>> =
+  keyof DefinitionFromEnum<E>;
+
+export type EnumValue<
   E extends Enum<EnumDefinition>,
-  V extends keyof DefinitionFromEnum<E>,
+  V extends EnumVariant<E>,
 > = NoUndefined<DefinitionFromEnum<E>[V]>;
 
 export type EnumFactory<E extends Enum<EnumDefinition>> = {
-  [V in keyof DefinitionFromEnum<E>]: (data: EnumVariant<E, V>) => E;
+  [V in EnumVariant<E>]: (data: EnumValue<E, V>) => E;
 };
 
 export type ExhaustiveMatcher<E extends Enum<EnumDefinition>, T> = {
-  [V in keyof DefinitionFromEnum<E>]: (data: EnumVariant<E, V>) => T;
+  [V in EnumVariant<E>]: (data: EnumValue<E, V>) => T;
 };
 
 export type WildcardMatcher<E extends Enum<EnumDefinition>, T> =
@@ -86,22 +89,22 @@ export type Enum<D extends EnumDefinition> =
   };
 
 function createEnumFactory<E extends Enum<EnumDefinition>>(
-  variants: Record<keyof DefinitionFromEnum<E>, unknown>,
-): EnumFactory<Enum<DefinitionFromEnum<E>>>;
+  variants: Record<EnumVariant<E>, unknown>,
+): EnumFactory<E>;
 function createEnumFactory<
   I extends Enum<EnumDefinition> & EnumImpl<EnumDefinition>,
 >(
-  variants: Record<keyof DefinitionFromEnum<I>, unknown>,
+  variants: Record<EnumVariant<I>, unknown>,
   Impl: new (value: EnumClassValue<I>) => EnumImpl<EnumDefinition>,
 ): EnumFactory<I>;
 function createEnumFactory<E extends Enum<EnumDefinition>>(
-  variants: Record<keyof DefinitionFromEnum<E>, unknown>,
+  variants: Record<EnumVariant<E>, unknown>,
   Impl?: new (value: unknown) => unknown,
 ) {
-  let result = {} as Record<keyof DefinitionFromEnum<E>, any>;
+  let result = {} as Record<EnumVariant<E>, any>;
 
   for (let key in variants) {
-    let variant = key as keyof DefinitionFromEnum<E>;
+    let variant = key as EnumVariant<E>;
 
     result[variant] = Impl == null
       ? (data: unknown = null) => ({ [variant]: data })
