@@ -1,7 +1,6 @@
 type NoUndefined<T> = Exclude<T, undefined | void>;
 
-declare const enumDefinition: unique symbol;
-declare const enumMutable: unique symbol;
+declare const enumVariants: unique symbol;
 const enumFactory = Symbol();
 
 /**
@@ -36,42 +35,41 @@ const enumFactory = Symbol();
  * type Message<T> = Enum<MessageVariants<T>>;
  * ```
  */
-export type Enum<E> = Readonly<
-  (unknown extends E ? {}
+export type Enum<V> = Readonly<
+  (unknown extends V ? {}
     : {
-      [K in keyof E]:
-        & Record<K, NoUndefined<E[K]>>
-        & Partial<Record<Exclude<keyof Sanitize<E>, K>, never>>;
-    }[keyof Sanitize<E>]) & {
-    [enumDefinition]?: Sanitize<E>;
-    [enumMutable]?: boolean;
+      [K in keyof V]:
+        & Record<K, NoUndefined<V[K]>>
+        & Partial<Record<Exclude<keyof Sanitize<V>, K>, never>>;
+    }[keyof Sanitize<V>]) & {
+    [enumVariants]?: Sanitize<V>;
   }
 >;
 
-type Sanitize<E> = Omit<
-  E,
+type Sanitize<V> = Omit<
+  V,
   | "_"
   | {
-    [K in keyof E]: NoUndefined<E[K]> extends never ? K : never;
-  }[keyof E]
+    [K in keyof V]: NoUndefined<V[K]> extends never ? K : never;
+  }[keyof V]
 >;
 
-type EnumDefinition<T extends Enum<unknown>> = NoUndefined<
-  T[typeof enumDefinition]
+type EnumVariants<E extends Enum<unknown>> = NoUndefined<
+  E[typeof enumVariants]
 >;
 
-type EnumFactory<E> = {
-  [K in keyof Sanitize<E>]: E[K] extends null ? () => Enum<E>
-    : (value: NoUndefined<E[K]>) => Enum<E>;
+type EnumFactory<V> = {
+  [K in keyof Sanitize<V>]: V[K] extends null ? () => Enum<V>
+    : (value: NoUndefined<V[K]>) => Enum<V>;
 };
 
-type ExhaustiveMatcher<E> = {
-  [K in keyof Sanitize<E>]: (value: NoUndefined<Sanitize<E>[K]>) => unknown;
+type ExhaustiveMatcher<V> = {
+  [K in keyof Sanitize<V>]: (value: NoUndefined<Sanitize<V>[K]>) => unknown;
 };
 
-type WildcardMatcher<E> = Partial<ExhaustiveMatcher<E>> & { _: () => unknown };
+type WildcardMatcher<V> = Partial<ExhaustiveMatcher<V>> & { _: () => unknown };
 
-export type Matcher<E> = ExhaustiveMatcher<E> | WildcardMatcher<E>;
+export type Matcher<V> = ExhaustiveMatcher<V> | WildcardMatcher<V>;
 
 export function Variant<T = null>(): T {
   return undefined as never;
@@ -120,21 +118,21 @@ export namespace Enum {
    * const quit = Message().Quit(null);
    * ```
    */
-  export function factory<E>(
-    Enum: (new () => E) & { [enumFactory]?: EnumFactory<E> },
-  ): EnumFactory<E> {
+  export function factory<V>(
+    Enum: (new () => V) & { [enumFactory]?: EnumFactory<V> },
+  ): EnumFactory<V> {
     if (Enum[enumFactory] != null) return Enum[enumFactory]!;
 
-    const result: Partial<EnumFactory<E>> = {};
+    const result: Partial<EnumFactory<V>> = {};
 
     for (const variant in new Enum()) {
       // @ts-ignore
       result[variant] = ((value: any) => {
-        return { [variant]: value ?? null } as Enum<E>;
+        return { [variant]: value ?? null } as Enum<V>;
       }) as any;
     }
 
-    return (Enum[enumFactory] = result as EnumFactory<E>);
+    return (Enum[enumFactory] = result as EnumFactory<V>);
   }
 
   /**
@@ -186,10 +184,10 @@ export namespace Enum {
    * ```
    */
   export function match<
-    T extends Enum<unknown>,
-    M extends Matcher<EnumDefinition<T>>,
+    E extends Enum<unknown>,
+    M extends Matcher<EnumVariants<E>>,
   >(
-    value: T,
+    value: E,
     matcher: M,
   ): {
     [K in keyof M]: M[K] extends (arg: any) => any ? ReturnType<M[K]> : never;
@@ -229,7 +227,7 @@ export namespace Enum {
    * // => { B: "Hello" }
    * ```
    */
-  export function mutate<T extends Enum<unknown>>(value: T, other: T): void {
+  export function mutate<E extends Enum<unknown>>(value: E, other: E): void {
     for (const variant in value) {
       // @ts-ignore
       delete value[variant];
