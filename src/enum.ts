@@ -5,9 +5,11 @@ declare const enumMutable: unique symbol;
 const enumFactory = Symbol();
 
 /**
- * Create an enum type by defining all your variants in a class with
- * the `Variant<T>()` function. The data type contained in the variants
- * cannot be `undefined`. The variant name cannot be `_` as it is reserved.
+ * Create an enum type by defining all your variants in a class with the
+ * `Variant<T>()` function.
+ *
+ * The data type contained in the variants cannot be `undefined`. The variant
+ * name cannot be `_` as it is reserved.
  *
  * Then use the helper type `Enum` to create your enum type. To construct enums
  * easier, you can use `Enum.factory()`.
@@ -22,9 +24,7 @@ const enumFactory = Symbol();
  * type Message = Enum<MessageVariants>;
  * ```
  *
- * It's also possible to create generic enum types. Mark any generic variants as
- * type `unknown` in your variants object and supply the generic type in the
- * type definition itself:
+ * It's also possible to create generic enum types:
  *
  * ```ts
  * class MessageVariants<T> {
@@ -82,7 +82,7 @@ export class NonExhaustiveMatcherError extends Error {
 
 export namespace Enum {
   /**
-   * Creates easier constructors for the given enum type.
+   * Creates easier constructors for the given enum variants.
    *
    * ```ts
    * class MessageVariants {
