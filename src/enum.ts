@@ -1,4 +1,4 @@
-type NoUndefined<T> = Exclude<T, undefined | void>;
+export type NoUndefined = {} | null;
 
 declare const enumVariants: unique symbol;
 const enumFactory = Symbol();
@@ -35,41 +35,43 @@ const enumFactory = Symbol();
  * type Message<T> = Enum<MessageVariants<T>>;
  * ```
  */
-export type Enum<V> = Readonly<
-  (unknown extends V ? {}
-    : {
-      [K in keyof V]:
-        & Record<K, NoUndefined<V[K]>>
-        & Partial<Record<Exclude<keyof Sanitize<V>, K>, never>>;
-    }[keyof Sanitize<V>]) & {
-    [enumVariants]?: Sanitize<V>;
-  }
->;
+export type Enum<V> = IsValidVariants<V> extends true ? Readonly<
+    (unknown extends V ? {}
+      : {
+        [K in keyof V]:
+          & Record<K, V[K]>
+          & Partial<Record<Exclude<keyof V, K>, never>>;
+      }[keyof V]) & {
+      [enumVariants]?: V;
+    }
+  >
+  : never;
 
-type Sanitize<V> = Omit<
-  V,
-  | "_"
-  | {
-    [K in keyof V]: NoUndefined<V[K]> extends never ? K : never;
-  }[keyof V]
->;
+type IsValidVariants<V> = {
+  [K in keyof V]: K extends "_" ? false
+    : V[K] extends NoUndefined ? true
+    : false;
+}[keyof V];
 
-type EnumVariants<E extends Enum<unknown>> = NoUndefined<
+type EnumVariants<E extends Enum<unknown>> = NonNullable<
   E[typeof enumVariants]
 >;
 
-type EnumFactory<V> = {
-  [K in keyof Sanitize<V>]: V[K] extends null ? () => Enum<V>
-    : (value: NoUndefined<V[K]>) => Enum<V>;
-};
+type EnumFactory<V> = IsValidVariants<V> extends true ? {
+    [K in keyof V]: V[K] extends null ? () => Enum<V>
+      : (value: V[K]) => Enum<V>;
+  }
+  : never;
 
 type ExhaustiveMatcher<V> = {
-  [K in keyof Sanitize<V>]: (value: NoUndefined<Sanitize<V>[K]>) => unknown;
+  [K in keyof V]: (value: V[K]) => unknown;
 };
 
 type WildcardMatcher<V> = Partial<ExhaustiveMatcher<V>> & { _: () => unknown };
 
-export type Matcher<V> = ExhaustiveMatcher<V> | WildcardMatcher<V>;
+export type Matcher<V> = IsValidVariants<V> extends true
+  ? ExhaustiveMatcher<V> | WildcardMatcher<V>
+  : never;
 
 export function Variant<T = null>(): T {
   return undefined as never;
@@ -118,21 +120,29 @@ export namespace Enum {
    * const quit = Message().Quit(null);
    * ```
    */
-  export function factory<V>(
-    Enum: (new () => V) & { [enumFactory]?: EnumFactory<V> },
-  ): EnumFactory<V> {
-    if (Enum[enumFactory] != null) return Enum[enumFactory]!;
+  export function factory<C extends new () => {}>(
+    EnumVariants: C,
+  ): EnumFactory<C extends new () => infer V ? V : never> {
+    type V = C extends new () => infer V ? V : never;
+
+    const EnumWithFactory = EnumVariants as C & {
+      [enumFactory]?: EnumFactory<V>;
+    };
+
+    if (EnumWithFactory[enumFactory] != null) {
+      return EnumWithFactory[enumFactory]!;
+    }
 
     const result: Partial<EnumFactory<V>> = {};
 
-    for (const variant in new Enum()) {
+    for (const variant in new EnumVariants()) {
       // @ts-ignore
-      result[variant] = ((value: any) => {
-        return { [variant]: value ?? null } as Enum<V>;
-      }) as any;
+      result[variant] = (value: any) => {
+        return { [variant]: value ?? null };
+      };
     }
 
-    return (Enum[enumFactory] = result as EnumFactory<V>);
+    return (EnumWithFactory[enumFactory] = result as EnumFactory<V>);
   }
 
   /**

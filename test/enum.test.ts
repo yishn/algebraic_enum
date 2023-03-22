@@ -42,6 +42,19 @@ Deno.test({
 });
 
 Deno.test({
+  name: "Invalid variants should result in never type",
+  fn() {
+    expectType<TypeEqual<GenericMessage<undefined>, never>>(true);
+
+    type InvalidVariantTypeEnum = Enum<{ A: null; B: null; C: undefined }>;
+    expectType<TypeEqual<InvalidVariantTypeEnum, never>>(true);
+
+    type InvalidWildcardVariantEnum = Enum<{ A: null; B: null; _: null }>;
+    expectType<TypeEqual<InvalidWildcardVariantEnum, never>>(true);
+  },
+});
+
+Deno.test({
   name: "Enum factory should simplify enum value creation",
   fn() {
     let msg = Message().Plaintext("Hello World");

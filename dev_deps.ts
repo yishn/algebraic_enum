@@ -1,5 +1,5 @@
 export { expectType } from "npm:ts-expect@1.1.0";
-export type { TypeEqual } from "npm:ts-expect@1.1.0";
+export type { TypeEqual, TypeOf } from "npm:ts-expect@1.1.0";
 
 export {
   assert,
