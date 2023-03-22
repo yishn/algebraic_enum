@@ -29,6 +29,6 @@
   },
   "homepage": "https://github.com/yishn/algebraic_enum#readme",
   "devDependencies": {
-    "typescript": "^4.1.3"
+    "typescript": "^5.0.2"
   }
 }
