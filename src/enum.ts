@@ -41,11 +41,19 @@ export type Enum<E> = Readonly<
     : {
       [K in keyof E]:
         & Record<K, NoUndefined<E[K]>>
-        & Partial<Record<Exclude<keyof E, K>, never>>;
-    }[keyof E]) & {
-    [enumDefinition]?: E;
+        & Partial<Record<Exclude<keyof Sanitize<E>, K>, never>>;
+    }[keyof Sanitize<E>]) & {
+    [enumDefinition]?: Sanitize<E>;
     [enumMutable]?: boolean;
   }
+>;
+
+type Sanitize<E> = Omit<
+  E,
+  | "_"
+  | {
+    [K in keyof E]: NoUndefined<E[K]> extends never ? K : never;
+  }[keyof E]
 >;
 
 type EnumDefinition<T extends Enum<unknown>> = NoUndefined<
@@ -53,17 +61,15 @@ type EnumDefinition<T extends Enum<unknown>> = NoUndefined<
 >;
 
 type EnumFactory<E> = {
-  [K in keyof E]: E[K] extends null ? () => Enum<E>
+  [K in keyof Sanitize<E>]: E[K] extends null ? () => Enum<E>
     : (value: NoUndefined<E[K]>) => Enum<E>;
 };
 
 type ExhaustiveMatcher<E> = {
-  [K in keyof E]: (value: NoUndefined<E[K]>) => unknown;
+  [K in keyof Sanitize<E>]: (value: NoUndefined<Sanitize<E>[K]>) => unknown;
 };
 
-type WildcardMatcher<E> =
-  & Partial<ExhaustiveMatcher<E>>
-  & ExhaustiveMatcher<{ _: null }>;
+type WildcardMatcher<E> = Partial<ExhaustiveMatcher<E>> & { _: () => unknown };
 
 export type Matcher<E> = ExhaustiveMatcher<E> | WildcardMatcher<E>;
 
@@ -122,6 +128,7 @@ export namespace Enum {
     const result: Partial<EnumFactory<E>> = {};
 
     for (const variant in new Enum()) {
+      // @ts-ignore
       result[variant] = ((value: any) => {
         return { [variant]: value ?? null } as Enum<E>;
       }) as any;
