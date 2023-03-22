@@ -1,6 +1,6 @@
 {
   "name": "algebraic_enum",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "An algebraic enum type for TypeScript heavily inspired by Rust.",
   "main": "./dist/commonjs/mod.js",
   "module": "./dist/esm/mod.js",
