@@ -7,8 +7,8 @@
   "scripts": {
     "prepublishOnly": "npm run dist",
     "format": "deno fmt README.md ci src test",
-    "test": "npm run format -- --check && deno test --unstable --coverage=./coverage",
-    "dist": "deno run --unstable --allow-read --allow-write --allow-run ./ci/dist.ts"
+    "test": "npm run format -- --check && deno test --coverage=./coverage",
+    "dist": "deno run --allow-read --allow-write --allow-run ./ci/dist.ts"
   },
   "repository": {
     "type": "git",
