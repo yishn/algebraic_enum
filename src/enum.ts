@@ -117,7 +117,7 @@ export namespace Enum {
   export function factory<E>(
     Enum: (new () => E) & { [enumFactory]?: EnumFactory<E> },
   ): EnumFactory<E> {
-    if (Enum[enumFactory] != null) return Enum[enumFactory];
+    if (Enum[enumFactory] != null) return Enum[enumFactory]!;
 
     const result: Partial<EnumFactory<E>> = {};
 
