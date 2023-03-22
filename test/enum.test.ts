@@ -8,14 +8,17 @@ import {
 } from "../dev_deps.ts";
 import { TypeExtends } from "./utils.ts";
 
-class MessageVariants {
+class MessageVariants<T> {
   Quit = null;
-  Plaintext = Variant<string>();
+  Plaintext = Variant<T>();
   Encrypted = Variant<number[]>();
 }
 
-type Message = Enum<MessageVariants>;
-const Message = () => Enum.factory(MessageVariants);
+type Message = Enum<MessageVariants<string>>;
+const Message = () => Enum.factory(MessageVariants<string>);
+
+type GenericMessage<T> = Enum<MessageVariants<T>>;
+const GenericMessage = <T>() => Enum.factory(MessageVariants<T>);
 
 Deno.test({
   name: "Enums can contain one and only one variant",
@@ -49,13 +52,16 @@ Deno.test({
 
     msg = Message().Encrypted([1, 2, 3]);
     assertEquals(msg, { Encrypted: [1, 2, 3] });
+
+    let genMsg = GenericMessage<boolean>().Plaintext(true);
+    assertEquals(genMsg, { Plaintext: true });
   },
 });
 
 Deno.test({
   name: "Enum.match() has to be exhaustive",
   fn() {
-    type M = Matcher<MessageVariants>;
+    type M = Matcher<MessageVariants<string>>;
 
     expectType<M>({
       Quit: () => -1,
