@@ -81,6 +81,39 @@ export class NonExhaustiveMatcherError extends Error {
 }
 
 export namespace Enum {
+  /**
+   * Creates easier constructors for the given enum type.
+   *
+   * ```ts
+   * class MessageVariants {
+   *   Quit = null;
+   *   Plaintext = Variant<string>();
+   *   Encrypted = Variant<number[]>();
+   * };
+   *
+   * type Message = Enum<MessageVariants>;
+   * const Message = () => Enum.factory(MessageVariants);
+   *
+   * const plain = Message().Plaintext("Hello World!");
+   * const quit = Message().Quit(null);
+   * ```
+   *
+   * You can also define generic enum types:
+   *
+   * ```ts
+   * class MessageVariants<T> {
+   *   Quit = null;
+   *   Plaintext = Variant<T>();
+   *   Encrypted = Variant<number[]>();
+   * };
+   *
+   * type Message<T> = Enum<MessageVariants<T>>;
+   * const Message = <T>() => Enum.factory(MessageVariants<T>);
+   *
+   * const plain = Message<string>().Plaintext("Hello World!");
+   * const quit = Message().Quit(null);
+   * ```
+   */
   export function factory<E>(
     Enum: (new () => E) & { [enumFactory]?: EnumFactory<E> },
   ): EnumFactory<E> {
@@ -97,6 +130,54 @@ export namespace Enum {
     return (Enum[enumFactory] = result as EnumFactory<E>);
   }
 
+  /**
+   * Inspects the given enum `value` and executes code based on which variant
+   * matches `value`.
+   *
+   * ```ts
+   * class MessageVariants {
+   *   Quit = null;
+   *   Plaintext = Variant<string>();
+   *   Encrypted = Variant<number[]>();
+   * };
+   *
+   * type Message = Enum<MessageVariants>;
+   * const Message = () => Enum.factory(MessageVariants);
+   *
+   * const msg: Message = getMessage();
+   *
+   * const length = Enum.match(msg, {
+   *   Quit: () => -1,
+   *   Plaintext: (data) => data.length,
+   *   Encrypted: (data) => decrypt(data).length
+   * });
+   * ```
+   *
+   * Note that matches need to be exhaustive. You need to exhaust every last
+   * possibility in order for the code to be valid. The following code won't
+   * compile:
+   *
+   * ```ts
+   * Enum.match(msg, {
+   *   Quit: () => console.log("Message stream ended.")
+   * });
+   * ```
+   *
+   * In case you don't care about other variants, you can either use the special
+   * wildcard match `_` which matches all variants not specified in the matcher,
+   * or a simple `if` statement:
+   *
+   * ```ts
+   * Enum.match(msg, {
+   *   Quit: () => console.log("Message stream ended."),
+   *   _: () => console.log("Stream goes on...")
+   * });
+   *
+   * if (msg.Plaintext !== undefined) {
+   *   console.log(msg.Plaintext);
+   * }
+   * ```
+   */
   export function match<
     T extends Enum<unknown>,
     M extends Matcher<EnumDefinition<T>>,
@@ -122,6 +203,25 @@ export namespace Enum {
     throw new NonExhaustiveMatcherError();
   }
 
+  /**
+   * Mutates the given `value` enum in-place to match the data in `other`.
+   *
+   * ```ts
+   * class EVariants {
+   *   A = Variant<number>();
+   *   B = Variant<string>();
+   * };
+   *
+   * type E = Enum<EVariants>;
+   * const E = () => Enum.factory(EVariants);
+   *
+   * const a = E().A(5);
+   * Enum.mutate(a, E().B("Hello"));
+   *
+   * console.log(b);
+   * // => { B: "Hello" }
+   * ```
+   */
   export function mutate<T extends Enum<unknown>>(value: T, other: T): void {
     for (const variant in value) {
       // @ts-ignore
